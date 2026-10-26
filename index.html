@@ -223,6 +223,27 @@ dialog .pied{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;flex-w
 .rapports p{margin:0;font-size:.88rem;color:var(--gris)}
 .rapports .outils{margin-top:auto}
 
+
+/* ------------------------------------------------------------------ menu Plus, export, filtres (téléphone) */
+.exp{position:relative;display:inline-flex}
+.exp-tog{display:none}
+.exp-l{display:inline-flex;gap:8px;flex-wrap:wrap}
+.filtres-tog{display:none}
+.badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:#0b3d73;color:#fff;font-size:.72rem;font-weight:700}
+.plus-compte{display:flex;gap:14px;align-items:center;background:#0b3d73;color:#fff;border-radius:var(--r-l);padding:16px;margin-bottom:8px}
+.plus-compte .ini{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;font-family:var(--titre);font-weight:700;flex:none}
+.plus-compte b{display:block;font-family:var(--titre);font-size:1.1rem;overflow:hidden;text-overflow:ellipsis}
+.plus-compte span{font-size:.85rem;opacity:.85}
+.plus-titre{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--gris);font-family:var(--texte);font-weight:600;margin:20px 4px 8px}
+.plus-liste{background:var(--surface);border:1px solid var(--trait);border-radius:var(--r-m);overflow:hidden}
+.plus-liste a,.plus-liste button{display:flex;align-items:center;gap:14px;width:100%;min-height:56px;padding:8px 14px;border:0;border-bottom:1px solid var(--trait);background:none;color:var(--encre);text-decoration:none;font-size:1rem;font-weight:500;text-align:left;cursor:pointer}
+.plus-liste > :last-child{border-bottom:0}
+.plus-liste a:active,.plus-liste button:active{background:var(--bleu-pale)}
+.plus-liste .pic{width:38px;height:38px;border-radius:10px;background:var(--bleu-pale);color:var(--bleu);display:grid;place-items:center;flex:none}
+.plus-liste .pic svg{width:20px;height:20px}
+.plus-liste .lib{flex:1;min-width:0}
+.plus-liste .chev{color:var(--gris);font-size:1.4rem;line-height:1}
+.plus-liste .rouge{color:var(--rouge)} .plus-liste .rouge .pic{background:var(--rouge-pale);color:var(--rouge)}
 /* Connexion */
 .login{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr}
 .login .gauche{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:48px;gap:20px}
@@ -257,6 +278,58 @@ dialog .pied{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;flex-w
   .deux,.trois{grid-template-columns:1fr}
   h1{font-size:1.45rem}
   .barres-h div{grid-template-columns:110px 1fr 34px}
+  /* --- téléphone : confort et lisibilité */
+  input,select,textarea{font-size:16px}                     /* évite le zoom automatique sur iPhone */
+  .btn{min-height:42px} .btn.petit{min-height:36px;padding:6px 12px}
+  .entete{gap:10px} .entete .outils{width:100%} .entete .outils select{flex:1 1 100%;width:100%}
+  .exp-tog{display:inline-flex}
+  .exp-l{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:20;flex-direction:column;gap:4px;background:var(--surface);border:1px solid var(--trait);border-radius:var(--r-m);padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.15);min-width:170px}
+  .exp.ouvert .exp-l{display:flex}
+  .exp-l .btn{justify-content:flex-start;border:0;min-height:44px;font-size:.95rem}
+  .filtres select,.filtres input{width:100%}
+  .filtres > select,.filtres > .champ{flex:1 1 calc(50% - 4px)}
+  .filtres.repliable .filtres-tog{display:inline-flex;flex:none}
+  .filtres.repliable input[type=search]{flex:1 1 calc(100% - 140px)}
+  .filtres.repliable:not(.ouvert) > select,.filtres.repliable:not(.ouvert) > .champ,.filtres.repliable:not(.ouvert) > label:not(.champ-q){display:none}
+  .onglets{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .onglets::-webkit-scrollbar{display:none}
+  .onglets button{white-space:nowrap;flex:none;padding:10px 12px}
+  /* tableaux → fiches */
+  .tab-wrap:has(> table.empile){border:0;background:none;overflow:visible;max-height:none!important}
+  table.empile thead{display:none}
+  table.empile,table.empile tbody,table.empile tfoot{display:block}
+  table.empile tr{display:block;background:var(--surface);border:1px solid var(--trait);border-radius:var(--r-m);padding:10px 14px;margin-bottom:8px}
+  table.empile tfoot tr{background:var(--bleu-pale)}
+  table.empile td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;padding:3px 0;text-align:right;min-height:26px}
+  table.empile td::before{content:attr(data-label);color:var(--gris);font-size:.82rem;font-weight:500;text-align:left;flex:none;max-width:45%}
+  table.empile tr{display:flex;flex-direction:column}
+  table.empile:not(.a-titre) td:first-child,table.empile td.titre{display:block;text-align:left;font-size:1rem;font-weight:600;padding-bottom:6px;order:-1}
+  table.empile:not(.a-titre) td:first-child::before,table.empile td.titre::before{display:none}
+  .bande dd{font-size:1.3rem}
+  .grille-mois th:first-child,.grille-mois td:first-child{position:sticky;left:0;z-index:2;background:var(--surface);max-width:130px;box-shadow:1px 0 0 var(--trait)}
+  .grille-mois th:first-child{z-index:3}
+  .grille-mois td:first-child{width:130px;min-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .grille-mois td:first-child a{white-space:nowrap}
+  table.empile td:empty,table.empile td[data-label=""]::before{display:none}
+  table.empile td.vide{display:block;text-align:center}
+  table.empile td.vide::before{display:none}
+  table.empile tr.clic:active{background:var(--bleu-pale)}
+  tbody tr:hover{background:none}
+  /* connexion compacte */
+  .login .gauche{padding:22px 20px 18px;gap:10px}
+  .login .gauche img{width:88px;padding:3px}
+  .login .gauche h1{font-size:1.35rem}
+  .login .gauche p{display:none}
+  .login .droite{place-items:start center;padding:24px 20px}
+  .login form .btn{justify-content:center;min-height:48px}
+  /* fenêtres : plein écran par le bas */
+  dialog{max-width:100vw;width:100vw;margin:auto 0 0;border-radius:18px 18px 0 0}
+  dialog form{max-height:90vh;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+  dialog .pied{position:sticky;bottom:-18px;background:var(--surface);padding:10px 0 4px;margin-bottom:-4px}
+  dialog .pied .btn{flex:1;justify-content:center;min-height:48px}
+  .tabbar a{min-height:56px;justify-content:center}
+  .tabbar a[aria-current="page"] svg{stroke-width:2.4}
+  .toast{bottom:calc(80px + env(safe-area-inset-bottom))}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -378,6 +451,8 @@ const I = {
   plus:'<path d="M12 5v14M5 12h14"/>',
   dl:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
   print:'<path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+  sortie:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+  lune:'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
   more:'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
   search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>',
   up:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
@@ -544,8 +619,13 @@ async function exporterXLSX(nom, feuilles) {   // feuilles : [{ nom, entetes, li
 function telecharger(blob, nom) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nom; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
 const EXPORTS = {};
 function boutonsExport(id, pdf = false) {
-  return `<button class="btn petit" data-export="${id}" data-fmt="xlsx">${ico('dl')} Excel</button><button class="btn petit" data-export="${id}" data-fmt="csv">CSV</button>${pdf ? `<button class="btn petit" data-export="${id}" data-fmt="pdf">${ico('print')} PDF</button>` : ''}`;
+  return `<span class="exp"><button type="button" class="btn petit exp-tog" aria-haspopup="true" aria-expanded="false">${ico('dl')} Exporter</button><span class="exp-l"><button class="btn petit" data-export="${id}" data-fmt="xlsx">${ico('dl')} Excel</button><button class="btn petit" data-export="${id}" data-fmt="csv">CSV</button>${pdf ? `<button class="btn petit" data-export="${id}" data-fmt="pdf">${ico('print')} PDF</button>` : ''}</span></span>`;
 }
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('.exp-tog'); const ouverts = $$('.exp.ouvert');
+  ouverts.forEach(x => { if (!t || x !== t.parentElement) { x.classList.remove('ouvert'); x.querySelector('.exp-tog').setAttribute('aria-expanded', 'false'); } });
+  if (t) { const x = t.parentElement; const o = x.classList.toggle('ouvert'); t.setAttribute('aria-expanded', String(o)); }
+});
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-export]'); if (!b) return;
   const f = EXPORTS[b.dataset.export]; if (!f) return;
@@ -816,7 +896,7 @@ VUES.tableau = () => {
   <section class="panneau"><header><h2>Mensualités ${h(e.libelle.replace(/^Mensualités\s*/, ''))} : encaissé / prévisions</h2><div class="outils">${boutonsExport('mensPrev', true)}</div></header>
     <div class="gf" style="margin-bottom:6px"><div><b>${fcfa(P('enc'))}</b><span>encaissé</span></div><div><b>${fcfa(P('prevu'))}</b><span>prévu sur l'année</span></div><div><b>${pct(P('enc'), P('prevu'))} %</b><span>réalisé</span></div></div>
     ${graphe}
-    <div class="tab-wrap mt"><table><thead><tr><th>Mois</th><th class="n">Prévision</th><th class="n">Encaissé</th><th class="n">Reste</th><th class="n">Taux</th><th class="n">À jour</th></tr></thead>
+    <div class="tab-wrap mt"><table class="garder"><thead><tr><th>Mois</th><th class="n">Prévision</th><th class="n">Encaissé</th><th class="n">Reste</th><th class="n">Taux</th><th class="n">À jour</th></tr></thead>
     <tbody>${mois.map(x => `<tr${x.k === moisCourant ? ' style="font-weight:600"' : ''}><td>${moisLong(x.k)}</td><td class="n">${fcfa(x.prevu)}</td><td class="n">${fcfa(x.enc)}</td><td class="n">${fcfa(x.reste)}</td><td class="n">${pct(x.enc, x.prevu)} %</td><td class="n">${x.ok} / ${x.nb}</td></tr>`).join('')}</tbody>
     <tfoot><tr><td>Total</td><td class="n">${fcfa(P('prevu'))}</td><td class="n">${fcfa(P('enc'))}</td><td class="n">${fcfa(P('reste'))}</td><td class="n">${pct(P('enc'), P('prevu'))} %</td><td></td></tr></tfoot></table></div>
   </section>
@@ -955,7 +1035,7 @@ VUES.membre = id => {
     ${pay.map(p => `<tr class="clic" data-pay="${p.id}"><td>${dateFr(p.date_paiement)}</td><td class="num">${h(p.recu_numero)}</td><td>${h(NATURES[p.nature])}</td><td>${h(p.periode_libelle || '')}</td>
       <td>${h(S.exercices.find(x => x.id === p.exercice_id)?.libelle || '')}</td><td class="n">${p.annule ? '<s>' + fcfa(p.montant) + '</s>' : fcfa(p.montant)}</td><td>${p.annule ? '<span class="pas ko">Annulé</span>' : p.source === 'import' ? '<span class="pas neutre">Reprise Excel</span>' : '<span class="pas ok">Valide</span>'}</td></tr>`).join('') || '<tr><td colspan="7" class="vide">Aucun paiement enregistré.</td></tr>'}
     </tbody></table></div></section>` : ''}
-  ${rels.length ? `<section class="panneau mt"><h2>Relances effectuées</h2><ul class="liste-ops">${rels.map(r => `<li><span>${h({ rappel: 'Rappel avant échéance', retard: 'Relance de retard', tranche: 'Rappel de tranche', autre: 'Relance' }[r.type])} · ${h(r.canal)}<br><small class="muted">${h((r.message || '').slice(0, 120))}</small></span><small class="muted">${new Date(r.created_at).toLocaleString('fr-FR')} · ${h(quiNom(r.created_by))}</small></li>`).join('')}</ul></section>` : ''}`;
+  ${rels.length ? `<section class="panneau mt"><h2>Messages envoyés</h2><ul class="liste-ops">${rels.map(r => `<li><span>${h({ rappel: 'Rappel avant échéance', retard: 'Relance de retard', tranche: 'Rappel de tranche', autre: 'Relance' }[r.type])} · ${h(r.canal)}<br><small class="muted">${h((r.message || '').slice(0, 120))}</small></span><small class="muted">${new Date(r.created_at).toLocaleString('fr-FR')} · ${h(quiNom(r.created_by))}</small></li>`).join('')}</ul></section>` : ''}`;
 };
 VUES.membre.apres = id => {
   const m = S.idx.membre.get(id); if (!m) return;
@@ -1211,8 +1291,8 @@ function messageRelance(type, m, data) {
   return modele.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
 }
 VUES.relances = () => {
-  const e = exoM(); const F = VUES.relances.f ||= { onglet: Number(AUJ.slice(8)) <= (e?.jour_limite || 10) ? 'rappel' : 'retard', com: '', cat: '', genre: '', cible: '' };
-  if (F.onglet === 'diffusion') return vueDiffusion(F);
+  const e = exoM(); const F = VUES.relances.f ||= { onglet: 'diffusion', com: '', cat: '', genre: '', cible: '' };
+  if (F.onglet === 'diffusion' || !peut.finances()) { F.onglet = 'diffusion'; return vueDiffusion(F); }
   const actifs = S.membres.filter(m => m.statut === 'actif' && filtreCom(m, F));
   const derniere = (mid, type) => (S.idx.rel.get(mid) || []).filter(r => r.type === type).at(-1);
   // Relances : toutes les échéances ouvertes, quel que soit l'exercice
@@ -1230,14 +1310,14 @@ VUES.relances = () => {
   VUES.relances.rows = rows;
   EXPORTS.rel = () => ({ nom: 'MMW_relances_' + F.onglet + '_' + AUJ, titre: { rappel: 'Rappels avant la date limite', retard: 'Relances des retards', tranche: 'Rappels des tranches' }[F.onglet], entetes: ['Matricule', 'Membre', 'Téléphone', 'Détail', 'Montant', 'Dernière relance', 'Message'],
     lignes: rows.map(r => [r.m.matricule, nomComplet(r.m), r.m.telephone || '', r.info, r.montant, derniere(r.m.id, F.onglet) ? dateFr(derniere(r.m.id, F.onglet).created_at) : '', r.msg]) });
-  return page('Relances', 'Messages prêts à envoyer par WhatsApp depuis votre téléphone ; chaque envoi est noté ici. Le rappel automatique du mois se règle dans Paramètres.', boutonsExport('rel', true), `
+  return page('Messages', 'Rappels de paiement prêts à envoyer par WhatsApp ; chaque envoi est noté. Le rappel automatique du mois se règle dans Paramètres.', boutonsExport('rel', true), `
     <div class="onglets" role="tablist">${ONGLETS_REL(e).map(([k, l]) => `<button role="tab" data-onglet="${k}" aria-selected="${F.onglet === k}">${l}</button>`).join('')}</div>
     <div class="filtres"><select id="fCom" aria-label="Commission">${optsComFiltre(F.com)}</select>
       ${rows.length && peut.relancer() ? `<button class="btn" id="btToutes">Marquer les ${rows.length} comme relancés</button>` : ''}</div>
     <div class="tab-wrap"><table><thead><tr><th>Membre</th><th>Détail</th><th class="n">Montant</th><th>Dernière relance</th><th></th></tr></thead><tbody>
     ${rows.map((r, i) => { const d = derniere(r.m.id, F.onglet); return `<tr><td><a href="#/membre/${r.m.id}">${h(nomComplet(r.m))}</a><br><small class="muted">${h(r.m.telephone || 'pas de téléphone')}</small></td><td>${h(r.info)}</td><td class="n">${fcfa(r.montant)}</td>
       <td>${d ? `<span class="pas ${d.created_at.slice(0, 10) === AUJ ? 'ok' : 'neutre'}">${dateFr(d.created_at)}</span>` : '<span class="muted">jamais</span>'}</td>
-      <td style="white-space:nowrap">${peut.relancer() && r.m.telephone_norm ? `<button class="btn petit vert" data-wa="${i}">${ico('wa')} WhatsApp</button> ` : ''}<button class="btn petit" data-copie="${i}">Copier</button></td></tr>`; }).join('') || '<tr><td colspan="5" class="vide">Personne à relancer dans cette catégorie.</td></tr>'}
+      <td style="white-space:nowrap">${peut.relancer() && r.m.telephone_norm ? `<button class="btn petit vert" data-wa="${i}">${ico('wa')} WhatsApp</button> ` : ''}<button class="btn petit" data-copie="${i}">Copier</button></td></tr>`; }).join('') || '<tr><td colspan="5" class="vide">Personne à relancer : tout le monde est à jour.</td></tr>'}
     </tbody></table></div>
     <p class="muted" style="font-size:.85rem">Les modèles de messages se modifient dans Paramètres. Variables : {prenom}, {mois}, {montant}, {date_limite}, {arrieres}, {tranche}, {matricule}.</p>`);
 };
@@ -1252,7 +1332,7 @@ VUES.relances.apres = () => {
   $('#btToutes')?.addEventListener('click', () => { if (confirm(`Noter ${rows.length} relances comme effectuées aujourd'hui ?`)) noter(rows); });
 };
 
-const ONGLETS_REL = e => [['rappel', `Rappel avant le ${e?.jour_limite || 10}`], ['retard', `Retards après le ${e?.jour_limite || 10}`], ['tranche', 'Tranches de cotisation'], ['diffusion', 'Message à tous']];
+const ONGLETS_REL = e => [['diffusion', 'Information'], ...(peut.finances() ? [['rappel', `Rappel avant le ${e?.jour_limite || 10}`], ['retard', `Retards après le ${e?.jour_limite || 10}`], ['tranche', 'Tranches']] : [])];
 // Liste de diffusion : un message libre envoyé à un groupe de membres choisi
 const lireBrouillon = () => { try { return localStorage.getItem('mmw_diffusion') || ''; } catch { return ''; } };
 function destinataires(F) {
@@ -1266,14 +1346,14 @@ function vueDiffusion(F) {
   EXPORTS.diffusion = () => ({ nom: 'MMW_liste_diffusion_' + AUJ, titre: 'Liste de diffusion', entetes: ['Matricule', 'Prénom', 'Nom', 'Téléphone (WhatsApp)', 'Catégorie', 'Commission'],
     lignes: liste.map(m => [m.matricule, m.prenom, m.nom, m.telephone_norm ? '+221' + m.telephone_norm : '', m.categorie || '', S.idx.com.get(m.commission_id)?.nom || '']) });
   const suivant = avecTel[F.pos];
-  return page('Relances', 'Envoyez n\'importe quel message à un groupe de membres.', boutonsExport('diffusion'), `
+  return page('Messages', 'Diffusez une information (réunion, événement, annonce…) à tous les membres ou à un groupe, par WhatsApp.', boutonsExport('diffusion'), `
     <div class="onglets" role="tablist">${ONGLETS_REL(e).map(([k, l]) => `<button role="tab" data-onglet="${k}" aria-selected="${F.onglet === k}">${l}</button>`).join('')}</div>
     <div class="grille g2">
       <section class="panneau"><h2>1. Le message</h2>
         <textarea id="dMsg" rows="7" style="width:100%" placeholder="Assalamou aleykoum {prenom}, ...">${h(F.msg)}</textarea>
         <p class="muted" style="font-size:.85rem;margin:6px 0 0">{prenom} est remplacé par le prénom de chaque membre. Le texte est gardé sur cet appareil.</p>
         <h2 class="mt">2. À qui</h2>
-        <div class="filtres" style="margin:0"><select id="fCom" aria-label="Commission">${optsComFiltre(F.com)}</select>
+        <div class="filtres garder" style="margin:0"><select id="fCom" aria-label="Commission">${optsComFiltre(F.com)}</select>
           <select id="dCat" aria-label="Catégorie">${opts([...CATEGORIES, ['aucune', 'Sans catégorie']], F.cat, 'Toutes catégories')}</select>
           <select id="dGenre" aria-label="Genre">${opts([['Homme', 'Garçons'], ['Femme', 'Filles']], F.genre, 'Garçons et filles')}</select>
           ${peut.finances() ? `<select id="dCible" aria-label="Situation">${opts([['retard', 'En retard de paiement'], ['ajour', 'À jour']], F.cible, 'Tous les membres')}</select>` : ''}</div>
@@ -1683,9 +1763,9 @@ VUES.parametres = () => {
   </div>
   ${adm ? `<div class="grille g2 mt">
     <section class="panneau"><h2>Utilisateurs et rôles</h2>
-      <p class="muted" style="font-size:.88rem;margin-top:0">Ajouter un utilisateur : Supabase › Authentication › Users › Add user. Il arrive ici comme « Membre du bureau ». Pour un responsable de commission, liez-le à sa fiche adhérent.</p>
-      <div class="tab-wrap"><table><thead><tr><th>Utilisateur</th><th>Rôle</th><th>Fiche liée</th><th>Accès</th></tr></thead><tbody>
-      ${S.profils.map(u => `<tr><td>${h(u.nom || '')}<br><small class="muted">${h(u.email)}</small></td><td><select data-role="${u.user_id}" ${u.user_id === S.user.id ? 'disabled' : ''}>${opts(Object.entries(ROLES), u.role)}</select></td>
+      <p class="muted" style="font-size:.88rem;margin-top:0">Ajouter un utilisateur : Supabase › Authentication › Users › Add user. Il arrive ici comme « Membre du bureau » ; donnez-lui un nom de connexion pour qu'il se connecte sans e-mail. Pour un responsable de commission, liez-le à sa fiche adhérent.</p>
+      <div class="tab-wrap"><table><thead><tr><th>Utilisateur</th><th>Nom de connexion</th><th>Rôle</th><th>Fiche liée</th><th>Accès</th></tr></thead><tbody>
+      ${S.profils.map(u => `<tr><td>${h(u.nom || '')}<br><small class="muted">${h(u.email)}</small></td><td><input data-ident="${u.user_id}" value="${h(u.identifiant || '')}" placeholder="ex. TRESORIER" style="max-width:150px" autocapitalize="characters"></td><td><select data-role="${u.user_id}" ${u.user_id === S.user.id ? 'disabled' : ''}>${opts(Object.entries(ROLES), u.role)}</select></td>
         <td><select data-lien="${u.user_id}">${optsMembres(u.membre_id, '— Aucune —')}</select></td>
         <td><select data-actif="${u.user_id}" ${u.user_id === S.user.id ? 'disabled' : ''}>${opts([['true', 'Autorisé'], ['false', 'Bloqué']], String(u.actif))}</select></td></tr>`).join('')}
       </tbody></table></div></section>
@@ -1712,6 +1792,8 @@ VUES.parametres.apres = () => {
   $$('[data-actexo]').forEach(b => b.onclick = async () => { try { await S.sb.from('exercices').update({ actif: false }).eq('actif', true).eq('type', 'mensualites'); await maj('exercices', Number(b.dataset.actexo), { actif: true }); localStorage.removeItem('mmw_annee'); await rafraichir('Année courante modifiée'); } catch (e) { erreur(e); } });
   $$('[data-genexo]').forEach(b => b.onclick = async () => { try { const n = await rpc('generer_echeances', { p_exercice: Number(b.dataset.genexo), p_membre: null }); await rafraichir(n ? `${n} échéance(s) ajoutée(s)` : 'Tout est déjà à jour : aucune échéance ajoutée'); } catch (e) { erreur(e); } });
   $$('[data-role]').forEach(s => s.onchange = async () => { try { await maj('profils', s.dataset.role, { role: s.value }, 'user_id'); await rafraichir('Rôle modifié'); } catch (e) { erreur(e); } });
+  $$('[data-ident]').forEach(s => s.onchange = async () => { const v = s.value.trim(); if (v && !/^[A-Za-z0-9._-]{3,30}$/.test(v)) return toast('Nom de connexion : 3 à 30 lettres ou chiffres, sans espace.', true);
+    try { await maj('profils', s.dataset.ident, { identifiant: v || null }, 'user_id'); await rafraichir('Nom de connexion enregistré'); } catch (e) { erreur(/duplicate|unique/i.test(e.message) ? new Error('Ce nom de connexion est déjà pris.') : e); } });
   $$('[data-lien]').forEach(s => s.onchange = async () => { try { await maj('profils', s.dataset.lien, { membre_id: s.value || null }, 'user_id'); await rafraichir('Fiche liée'); } catch (e) { erreur(e); } });
   $$('[data-actif]').forEach(s => s.onchange = async () => { try { await maj('profils', s.dataset.actif, { actif: s.value === 'true' }, 'user_id'); await rafraichir('Accès modifié'); } catch (e) { erreur(e); } });
   $('#btCopie')?.addEventListener('click', () => { navigator.clipboard?.writeText($('#tok').value); toast('Jeton copié'); });
@@ -1809,15 +1891,14 @@ function nav() {
   return [
     ['tableau', 'Tableau de bord', 'board', true], ['etat', 'État d\'un membre', 'search', true], ['membres', 'Adhérents', 'users', true], ['commissions', 'Commissions et bureau', 'layers', true], ['-'],
     ['cartes', 'Cartes de membre', 'card', fin], ['cotisations', 'Cotisations annuelles', 'coins', fin], ['mensualites', 'Mensualités', 'cal', fin],
-    ['encaissements', 'Encaissements', 'list', fin], ['relances', 'Relances', 'bell', fin && role() !== 'responsable'], ['depenses', 'Dépenses', 'out', peut.depenses()], ['-'],
+    ['encaissements', 'Encaissements', 'list', fin], ['messages', 'Messages', 'wa', peut.relancer() || (fin && role() !== 'responsable')], ['depenses', 'Dépenses', 'out', peut.depenses()], ['-'],
     ['rapports', 'Rapports', 'doc', true], ['import', 'Import Excel', 'up', peut.admin()], ['formulaire', 'Formulaire Google', 'form', peut.form()], ['parametres', 'Paramètres', 'gear', true],
   ].filter(x => x[0] === '-' || x[3]);
 }
 function coquille() {
   const nb = S.formRep.filter(r => ['doublon', 'erreur'].includes(r.statut)).length;
   const items = nav();
-  const tab = peut.finances() ? [['tableau', 'Accueil', 'board'], ['membres', 'Adhérents', 'users'], ['mensualites', 'Mensualités', 'cal'], ['encaissements', 'Caisse', 'list'], ['plus', 'Plus', 'more']]
-    : [['tableau', 'Accueil', 'board'], ['membres', 'Adhérents', 'users'], ['commissions', 'Commissions', 'layers'], ['rapports', 'Rapports', 'doc'], ['plus', 'Plus', 'more']];
+  const tab = TABBAR();
   $('#racine').innerHTML = `${S.env === 'test' ? '<div class="env-test">Environnement de TEST — les données ne sont pas celles du dahira</div>' : ''}<div class="app">
     <aside class="side treillis"><div class="marque"><img src="logo-256.png" alt=""><div><b>${h(param('sigle', 'MMW'))}</b><span>${h(nomAsso())}</span></div></div>
       <input type="search" class="cherche-nav" id="chNav" placeholder="État d'un membre…" aria-label="Rechercher l'état d'un membre">
@@ -1830,18 +1911,72 @@ function coquille() {
   $('#chNav').addEventListener('keydown', ev => { if (ev.key === 'Enter') { location.hash = '#/etat/' + encodeURIComponent(ev.target.value); ev.target.value = ''; } });
   $('#chNav').addEventListener('input', debounce(ev => { if (ev.target.value.trim().length >= 2) { location.hash = '#/etat/' + encodeURIComponent(ev.target.value); setTimeout(() => { ev.target.value = ''; }, 50); } }, 500));
 }
-VUES.plus = () => page('Menu', '', '', `<div class="coms">${nav().filter(x => x[0] !== '-').map(([k, l, i]) => `<a class="com" href="#/${k}" style="text-decoration:none;color:inherit;flex-direction:row;align-items:center">${ico(i)}<b>${l}</b></a>`).join('')}</div>`);
+VUES.messages = (...a) => VUES.relances(...a);
+VUES.messages.apres = (...a) => VUES.relances.apres(...a);
+const TABBAR = () => {
+  const ok = new Set(nav().map(x => x[0]));
+  const l = [['tableau', 'Accueil', 'board'], ['membres', 'Adhérents', 'users'], ok.has('mensualites') ? ['mensualites', 'Mensualités', 'cal'] : ['commissions', 'Commissions', 'layers'],
+    ok.has('messages') ? ['messages', 'Messages', 'wa'] : ['rapports', 'Rapports', 'doc'], ['plus', 'Plus', 'more']];
+  return l;
+};
+// Menu « Plus » (téléphone) : tout ce qui n'est pas dans la barre du bas, rangé par thème
+VUES.plus = () => {
+  const dansBarre = new Set(TABBAR().map(x => x[0]));
+  const items = new Map(nav().filter(x => x[0] !== '-' && !dansBarre.has(x[0])).map(x => [x[0], x]));
+  const nb = S.formRep.filter(r => ['doublon', 'erreur'].includes(r.statut)).length;
+  const groupes = [['Membres', ['etat', 'membres', 'commissions']], ['Argent', ['encaissements', 'mensualites', 'cotisations', 'cartes', 'depenses']],
+    ['Communication', ['messages', 'formulaire']], ['Outils', ['rapports', 'import', 'parametres']]];
+  const theme = { '': 'automatique', light: 'clair', dark: 'sombre' }[localStorage.getItem('mmw_theme') || ''];
+  return `<div class="plus-compte"><div class="ini" aria-hidden="true">${h((S.profil.nom || S.user.email || '?').slice(0, 2).toUpperCase())}</div>
+      <div style="min-width:0;flex:1"><b>${h(S.profil.identifiant || S.profil.nom || S.user.email)}</b><span>${h(ROLES[role()])}</span></div></div>
+    ${groupes.map(([titre, cles]) => { const l = cles.filter(k => items.has(k)).map(k => items.get(k)); return l.length ? `<h2 class="plus-titre">${titre}</h2>
+      <nav class="plus-liste">${l.map(([k, lib, i]) => `<a href="#/${k}"><span class="pic">${ico(i)}</span><span class="lib">${lib}</span>${k === 'formulaire' && nb ? `<span class="badge">${nb}</span>` : ''}<span class="chev" aria-hidden="true">›</span></a>`).join('')}</nav>` : ''; }).join('')}
+    <h2 class="plus-titre">Compte</h2>
+    <div class="plus-liste"><button type="button" id="plTheme"><span class="pic">${ico('lune')}</span><span class="lib">Thème : ${theme}</span><span class="chev" aria-hidden="true">›</span></button>
+      <button type="button" id="plSortir" class="rouge"><span class="pic">${ico('sortie')}</span><span class="lib">Se déconnecter</span></button></div>`;
+};
+VUES.plus.apres = () => {
+  $('#plSortir').onclick = sortir;
+  $('#plTheme').onclick = () => { const cyc = { '': 'light', light: 'dark', dark: '' }; localStorage.setItem('mmw_theme', cyc[localStorage.getItem('mmw_theme') || '']); appliquerTheme(); router(); };
+};
 
 let vueCourante = '';
+// Téléphone : tableaux en fiches lisibles, filtres repliables (le rendu ordinateur ne change pas)
+const filtresOuverts = new Set();
+function ameliorerMobile(el, nom) {
+  $$('table', el).forEach(t => {
+    if (t.closest('.grille-mois') || t.classList.contains('garder')) return;
+    const lib = $$('thead th', t).map(th => th.textContent.replace(/[▾▴]/g, '').trim());
+    if (lib.length < 3) return;
+    t.classList.add('empile');
+    const iTitre = lib.findIndex(x => /^(membre|utilisateur|membre\s*·?\s*fiche)$/i.test(x));
+    if (iTitre > 0) t.classList.add('a-titre');
+    $$('tbody tr, tfoot tr', t).forEach(tr => { let c = 0; [...tr.children].forEach(td => { if (!td.dataset.label && lib[c]) td.dataset.label = lib[c]; if (iTitre > 0 && c === iTitre) td.classList.add('titre'); c += Number(td.colSpan) || 1; }); });
+  });
+  $$('.filtres', el).forEach((f, i) => {
+    const champs = [...f.children].filter(x => x.matches('select, .champ, label.champ, input:not([type=search])'));
+    if (champs.length < 3 || f.classList.contains('garder')) return;
+    const cle = nom + i; f.classList.add('repliable'); if (filtresOuverts.has(cle)) f.classList.add('ouvert');
+    const actifs = $$('select', f).filter(x => x.selectedIndex > 0 && !x.dataset.choix).length;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn filtres-tog';
+    b.innerHTML = `${ico('list')} Filtres${actifs ? ` <span class="badge">${actifs}</span>` : ''}`;
+    b.onclick = () => { const o = f.classList.toggle('ouvert'); o ? filtresOuverts.add(cle) : filtresOuverts.delete(cle); };
+    const q = f.querySelector('input[type=search]'); q ? q.after(b) : f.prepend(b);
+  });
+}
 function router() {
   if (!S.profil) return;
   let [, nom = 'tableau', arg] = (location.hash || '#/tableau').split('/');
+  if (nom === 'relances') nom = 'messages';
+  const dlg = $('#modale'); if (dlg?.open && vueCourante !== location.hash) dlg.close();   // changer de page ferme la fenêtre ouverte
   const autorisees = new Set([...nav().map(x => x[0]), 'membre', 'commission', 'plus']);
   if (!VUES[nom] || !autorisees.has(nom)) nom = 'tableau';
   const v = VUES[nom]; const el = $('#vue'); if (!el) return;
   const scroll = vueCourante === location.hash ? window.scrollY : 0;
   try { el.innerHTML = v(arg); v.apres?.(arg); } catch (e) { console.error(e); el.innerHTML = `<div class="alerte rouge">Erreur d'affichage : ${h(e.message)}</div>`; }
-  $$('[data-nav]').forEach(a => { const on = a.dataset.nav === nom || (nom === 'membre' && a.dataset.nav === 'membres') || (nom === 'commission' && a.dataset.nav === 'commissions'); on ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'); });
+  const barre = new Set(TABBAR().map(x => x[0])); const parent = { membre: 'membres', commission: 'commissions' }[nom] || nom;
+  $$('[data-nav]').forEach(a => { const k = a.dataset.nav; const on = k === parent || (k === 'plus' && a.closest('.tabbar') && !barre.has(parent)); on ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'); });
+  ameliorerMobile(el, nom);
   $$('tr[data-href]', el).forEach(tr => tr.onclick = ev => { if (!ev.target.closest('a,button,select,input')) location.hash = tr.dataset.href; });
   $$('[data-pay]', el).forEach(t => t.addEventListener('click', ev => { if (ev.target.closest('a')) return; const p = S.idx.payId.get(t.dataset.pay); if (p) detailPaiement(p); }));
   $$('[data-choix]', el).forEach(sel => sel.addEventListener('change', ev => {
@@ -1864,15 +1999,23 @@ function ecranConfig() {
 function ecranConnexion(msg = '') {
   $('#racine').innerHTML = `${S.env === 'test' ? '<div class="env-test">Environnement de TEST</div>' : ''}<div class="login">${panneauGauche('Adhérents, commissions, cotisations, mensualités et caisse du dahira.')}
     <div class="droite"><form id="fLogin"><h1>Connexion</h1>${msg ? `<div class="alerte rouge">${h(msg)}</div>` : ''}
-      ${champ('E-mail', '<input name="email" type="email" required autocomplete="username">')}${champ('Mot de passe', '<input name="mdp" type="password" required autocomplete="current-password">')}
+      ${champ('Nom d\'utilisateur', '<input name="email" required autocomplete="username" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="ex. DMMW">')}${champ('Mot de passe', '<input name="mdp" type="password" required autocomplete="current-password">')}
       <button class="btn prim">Se connecter</button><button type="button" class="btn" id="btOubli">Mot de passe oublié</button></form></div></div>`;
   $('#fLogin').onsubmit = async ev => {
     ev.preventDefault(); const v = Object.fromEntries(new FormData(ev.target)); const b = $('button', ev.target); b.disabled = true;
-    const { error } = await S.sb.auth.signInWithPassword({ email: v.email.trim(), password: v.mdp }); b.disabled = false;
-    if (error) ecranConnexion(/Invalid login/.test(error.message) ? 'E-mail ou mot de passe incorrect.' : error.message);
+    const email = await emailDe(v.email); if (!email) { b.disabled = false; return ecranConnexion('Nom d\'utilisateur ou mot de passe incorrect.'); }
+    const { error } = await S.sb.auth.signInWithPassword({ email, password: v.mdp }); b.disabled = false;
+    if (error) ecranConnexion(/Invalid login/.test(error.message) ? 'Nom d\'utilisateur ou mot de passe incorrect.' : error.message);
   };
-  $('#btOubli').onclick = async () => { const email = $('#fLogin').email.value.trim(); if (!email) return toast('Saisissez d\'abord votre e-mail.', true);
+  $('#btOubli').onclick = async () => { const saisi = $('#fLogin').email.value.trim(); if (!saisi) return toast('Saisissez d\'abord votre nom d\'utilisateur.', true);
+    const email = await emailDe(saisi); if (!email) return toast('Nom d\'utilisateur inconnu.', true);
     const { error } = await S.sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }); error ? erreur(error) : toast('Lien de réinitialisation envoyé par e-mail.'); };
+}
+// Nom d'utilisateur (ex. DMMW) → e-mail de connexion ; un e-mail saisi est utilisé tel quel
+async function emailDe(saisi) {
+  const t = String(saisi || '').trim(); if (t.includes('@')) return t;
+  const { data, error } = await S.sb.rpc('email_de_connexion', { p_identifiant: t }); if (error) { console.error(error); return null; }
+  return data || null;
 }
 async function sortir() { await S.sb.auth.signOut(); }
 async function apresConnexion(session) {
