@@ -1617,7 +1617,7 @@ VUES.presences = id => {
     lignes: bilan.map(([m, c]) => [m.matricule, nomComplet(m), ...seances.slice().reverse().map(x => { const l = etatSeance(x).lignes.find(l => l.m.id === m.id); return { present: 'P', justifie: 'J', absent: 'A' }[l?.statut] || ''; }),
       c.present, c.justifie, c.absent, pct(c.present, seances.length)]) });
   const dernier = etats[0];
-  return page(`${g} · présences`, `Rencontres du dimanche · ${mem.length} membre${mem.length > 1 ? 's' : ''} dans la catégorie ${h(g)}`,
+  return page('Liste de présences rencontres', `${h(g)} · rencontres du dimanche · ${mem.length} membre${mem.length > 1 ? 's' : ''}`,
     `<select id="pGroupe" aria-label="Groupe">${opts(CATEGORIES.filter(x => peut.presences(x) || ['admin', 'tresorier', 'secretaire', 'bureau'].includes(role())), g)}</select>${boutonsExport('bilanPres', true)}${ecrit ? `<button class="btn prim" id="btSeance">${ico('plus')} Nouvelle rencontre</button>` : ''}`, `
     <dl class="bande treillis" style="--n:3"><div><dt>Rencontres tenues</dt><dd>${seances.length}</dd></div>
       <div><dt>Taux moyen de présence</dt><dd>${taux} %</dd></div>
@@ -1634,7 +1634,7 @@ function vueSeance(id) {
   const e = etatSeance(se); const ecrit = peut.presences(se.groupe);
   EXPORTS.seance = () => ({ nom: `MMW_presence_${se.groupe.replace(/\W+/g, '_')}_${se.date_seance}`, titre: `${se.groupe} — rencontre du ${dateLongue(se.date_seance)} : ${e.presents} présents sur ${e.total}`,
     entetes: ['Matricule', 'Membre', 'Téléphone', 'Statut', 'Justification'], lignes: e.lignes.map(l => [l.m.matricule, nomComplet(l.m), l.m.telephone || '', STP[l.statut][0], l.justification]) });
-  return `<div class="entete"><div><p style="margin:0"><a href="#/presences">‹ ${h(se.groupe)} · rencontres</a></p><h1 style="text-transform:capitalize">${h(dateLongue(se.date_seance))}</h1>${se.titre ? `<p>${h(se.titre)}</p>` : ''}</div>
+  return `<div class="entete"><div><p style="margin:0"><a href="#/presences">‹ Liste de présences rencontres · ${h(se.groupe)}</a></p><h1 style="text-transform:capitalize">${h(dateLongue(se.date_seance))}</h1>${se.titre ? `<p>${h(se.titre)}</p>` : ''}</div>
     <div class="outils"><button class="btn vert" id="btWaPres">${ico('wa')} Envoyer le rapport</button>${boutonsExport('seance', true)}${ecrit ? `<button class="btn" id="btModSeance">Modifier</button>` : ''}${peut.admin() ? `<button class="btn danger" id="btSupSeance">${ico('poubelle')} Supprimer</button>` : ''}</div></div>
     <div class="compteurs" id="cptPres"></div>
     ${ecrit ? `<div class="outils" style="margin:10px 0 12px"><button class="btn petit" id="btTousPres">Tous présents</button><button class="btn petit" id="btTousAbs">Tout remettre à absent</button><span class="muted" style="font-size:.85rem">Chaque choix est enregistré tout de suite.</span></div>` : ''}
@@ -2179,7 +2179,7 @@ async function sauvegarde(fmt) {
 function nav() {
   const fin = peut.finances();
   return [
-    ['tableau', 'Tableau de bord', 'board', true], ['etat', 'État d\'un membre', 'search', true], ['membres', 'Adhérents', 'users', true], ['commissions', 'Commissions et bureau', 'layers', true], ['presences', 'Kourel 1 · présences', 'coche', peut.voirPresences()], ['-'],
+    ['tableau', 'Tableau de bord', 'board', true], ['etat', 'État d\'un membre', 'search', true], ['membres', 'Adhérents', 'users', true], ['commissions', 'Commissions et bureau', 'layers', true], ['presences', 'Liste de présences rencontres', 'coche', peut.voirPresences()], ['-'],
     ['cartes', 'Cartes de membre', 'card', fin], ['cotisations', 'Cotisations annuelles', 'coins', fin], ['mensualites', 'Mensualités', 'cal', fin],
     ['encaissements', 'Encaissements', 'list', fin], ['messages', 'Messages', 'wa', peut.relancer() || (fin && role() !== 'responsable')], ['depenses', 'Dépenses', 'out', peut.depenses()], ['-'],
     ['rapports', 'Rapports', 'doc', true], ['import', 'Import Excel', 'up', peut.admin()], ['formulaire', 'Formulaire Google', 'form', peut.form()], ['parametres', 'Paramètres', 'gear', true],
