@@ -244,6 +244,8 @@ dialog .pied{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;flex-w
 .plus-liste .lib{flex:1;min-width:0}
 .plus-liste .chev{color:var(--gris);font-size:1.4rem;line-height:1}
 .plus-liste .rouge{color:var(--rouge)} .plus-liste .rouge .pic{background:var(--rouge-pale);color:var(--rouge)}
+/* organigramme (styles partagés avec l'impression : CSS_ORGA) */
+.og-defil{overflow-x:auto;padding-bottom:6px}
 /* barre Retour / Actualiser, aperçu d'impression */
 .barre-haut{display:flex;justify-content:space-between;gap:8px;padding:14px 28px 0}
 .ico-btn{display:grid;place-items:center;width:40px;height:40px;border:0;background:none;color:inherit;border-radius:10px;cursor:pointer;flex:none}
@@ -351,6 +353,7 @@ body.sans-defil{overflow:hidden}
 </style>
 </head>
 <body>
+<style id="cssOrga"></style>
 <div id="racine"><div class="chargement" id="chargementInitial">Chargement…</div></div>
 <dialog id="modale"></dialog>
 <script>
@@ -1142,6 +1145,12 @@ VUES.commissions = () => {
   const bureau = S.responsables.filter(r => !r.date_fin).sort((a, b) => (S.idx.com.get(a.commission_id)?.ordre || 0) - (S.idx.com.get(b.commission_id)?.ordre || 0));
   EXPORTS.bureau = () => ({ nom: 'MMW_composition_bureau', titre: 'Composition du bureau', entetes: ['Instance / commission', 'Fonction', 'Nom', 'Matricule', 'Téléphone', 'Depuis le'],
     lignes: bureau.map(r => { const m = S.idx.membre.get(r.membre_id); return [S.idx.com.get(r.commission_id)?.nom, r.role === 'adjoint' ? 'Adjoint' : 'Responsable', nomResp(r), m?.matricule || '', m?.telephone || '', dateFr(r.date_debut)]; }) });
+  EXPORTS.orga = () => ({ nom: 'MMW_organigramme', titre: 'Organigramme du dahira', entetes: ['Niveau', 'Instance / commission', 'Membres actifs', 'Fonction', 'Nom', 'Matricule', 'Téléphone'],
+    lignes: S.commissions.filter(c => c.actif).sort((a, b) => (/supervi/i.test(b.nom) - /supervi/i.test(a.nom)) || ((a.type === 'commission' ? 0 : 1) - (b.type === 'commission' ? 0 : 1)) || a.ordre - b.ordre).flatMap(c => {
+      const niv = /supervi/i.test(c.nom) ? 'Supervision' : c.type === 'commission' ? 'Commission' : 'Instance';
+      const n = c.type === 'commission' ? S.membres.filter(m => m.commission_id === c.id && m.statut === 'actif').length : '';
+      const rs = responsablesActuels(c.id).sort((a, b) => (a.role === 'adjoint') - (b.role === 'adjoint'));
+      return rs.length ? rs.map(r => { const m = S.idx.membre.get(r.membre_id); return [niv, c.nom, n, r.role === 'adjoint' ? 'Adjoint' : 'Responsable', nomResp(r), m?.matricule || '', m?.telephone || '']; }) : [[niv, c.nom, n, 'Poste à pourvoir', '', '', '']]; }) });
   const anciens = S.responsables.filter(r => r.date_fin).sort((a, b) => b.date_fin.localeCompare(a.date_fin));
   return page('Commissions et bureau', 'Les responsables sont désignés par un administrateur : choisir une commission dans le formulaire ne donne aucune fonction.',
     peut.membres() ? `<button class="btn prim" id="btNewCom">${ico('plus')} Nouvelle commission</button>` : '', `
@@ -1154,9 +1163,12 @@ VUES.commissions = () => {
         ${peut.bureau() ? `<td style="white-space:nowrap">${m ? '' : `<button class="btn petit" data-lier="${r.id}">Lier</button> `}<button class="btn petit" data-finmandat="${r.id}">Fin de mandat</button></td>` : ''}</tr>`; }).join('') || '<tr><td colspan="6" class="vide">Aucune désignation.</td></tr>'}
       </tbody></table></div>
       ${anciens.length ? `<details class="mt"><summary>Historique des mandats (${anciens.length})</summary><ul class="liste-ops">${anciens.map(r => `<li><span>${h(nomResp(r))} — ${r.role === 'adjoint' ? 'adjoint' : 'responsable'}, ${h(S.idx.com.get(r.commission_id)?.nom)}</span><small class="muted">${dateFr(r.date_debut)} → ${dateFr(r.date_fin)}</small></li>`).join('')}</ul></details>` : ''}
-    </section>`);
+    </section>
+    <section class="panneau mt"><header><h2>Organigramme</h2><div class="outils"><button class="btn petit prim" id="btOrga">${ico('print')} Exporter en PDF / imprimer</button>${boutonsExport('orga')}</div></header>
+      <div class="og-defil">${organigramme()}</div></section>`);
 };
 VUES.commissions.apres = () => {
+  $('#btOrga')?.addEventListener('click', imprimerOrganigramme);
   $('#btNewCom')?.addEventListener('click', () => formCommission());
   $$('[data-editcom]').forEach(b => b.onclick = () => formCommission(S.idx.com.get(Number(b.dataset.editcom))));
   $$('[data-designer]').forEach(b => b.onclick = () => designer(Number(b.dataset.designer)));
@@ -1171,6 +1183,68 @@ VUES.commissions.apres = () => {
       { onSubmit: async v => { await maj('responsables', r.id, { membre_id: v.membre_id, nom_libre: null }); await rafraichir('Responsable lié à sa fiche'); } });
   });
 };
+// Organigramme : dahira → superviseurs → commissions | instances (affichage écran et impression)
+function organigramme(pourImpression = false) {
+  const actifs = S.membres.filter(m => m.statut === 'actif');
+  const eff = c => actifs.filter(m => m.commission_id === c.id).length;
+  const ligne = r => { const m = S.idx.membre.get(r.membre_id); return `<li><span class="og-role">${r.role === 'adjoint' ? 'Adjoint' : 'Responsable'}</span><span class="og-nom">${h(m ? nomComplet(m) : r.nom_libre)}</span>${m?.telephone && !pourImpression ? '' : ''}</li>`; };
+  const boite = (c, cls = '') => { const rs = responsablesActuels(c.id).sort((a, b) => (a.role === 'adjoint') - (b.role === 'adjoint'));
+    return `<div class="og-boite ${cls}"><div class="og-titre">${h(c.nom)}${c.type === 'commission' ? `<small>${eff(c)} membre${eff(c) > 1 ? 's' : ''}</small>` : ''}</div>
+      <ul>${rs.map(ligne).join('') || '<li class="og-vide">Poste à pourvoir</li>'}</ul></div>`; };
+  const sup = S.commissions.filter(c => c.type === 'instance' && c.actif && /supervi/i.test(c.nom));
+  const coms = S.commissions.filter(c => c.type === 'commission' && c.actif);
+  const inst = S.commissions.filter(c => c.type === 'instance' && c.actif && !/supervi/i.test(c.nom));
+  const branche = (titre, l, cls) => l.length ? `<div class="og-branche"><div class="og-groupe ${cls}">${titre}<small>${l.length}</small></div><div class="og-trait"></div><div class="og-grille">${l.map(c => boite(c, cls)).join('')}</div></div>` : '';
+  return `<div class="og">
+    <div class="og-boite og-tete"><img src="${pourImpression ? LOGO_URL() : 'logo-256.png'}" alt=""><div><b>${h(nomAsso())}</b><small>${actifs.length} membres actifs</small></div></div>
+    ${sup.map(c => `<div class="og-trait"></div>${boite(c, 'og-sup')}`).join('')}
+    <div class="og-trait"></div>
+    <div class="og-branches">${branche('Commissions', coms, 'og-com')}${branche('Instances', inst, 'og-inst')}</div>
+  </div>`;
+}
+const CSS_ORGA = `
+.og{--og-bleu:#0b3d73;--og-trait:#9fb4c8;display:flex;flex-direction:column;align-items:center;padding:8px 0 4px}
+.og-boite{background:#fff;color:#14202c;border:1px solid #d5dde5;border-radius:12px;padding:10px 12px;width:240px;box-shadow:0 1px 2px rgba(0,0,0,.05);position:relative}
+.og-boite ul{list-style:none;margin:6px 0 0;padding:0}
+.og-boite li{display:flex;flex-direction:column;padding:3px 0;border-top:1px dashed #e3e9ef} .og-boite li:first-child{border-top:0}
+.og-role{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:#5b6875;font-weight:600}
+.og-nom{font-size:.88rem;font-weight:600;line-height:1.25}
+.og-vide{color:#8a96a3;font-style:italic;font-size:.85rem}
+.og-titre{font-weight:700;color:var(--og-bleu);display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-size:.95rem}
+.og-titre small{font-weight:500;color:#5b6875;font-size:.75rem;white-space:nowrap}
+.og-tete{display:flex;gap:10px;align-items:center;background:var(--og-bleu);color:#fff;border:0;width:auto;padding:12px 18px}
+.og-tete img{width:48px;height:48px;border-radius:50%;background:#fff;padding:2px}
+.og-tete b{display:block;font-size:1rem} .og-tete small{opacity:.85;font-size:.8rem}
+.og-sup{background:#e3edf6;border-color:#b7cde3;width:auto;min-width:300px;max-width:560px} .og-sup .og-titre{justify-content:center}
+.og-sup .og-role{display:none}
+.og-sup ul{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 22px} .og-sup li{white-space:nowrap} .og-sup li{border-top:0;text-align:center}
+.og-trait{width:2px;height:22px;background:var(--og-trait)}
+.og-branches{display:flex;gap:28px;justify-content:center;position:relative;padding-top:22px}
+.og-branches::before{content:'';position:absolute;top:0;left:calc(25% - 7px);right:calc(25% - 7px);height:2px;background:var(--og-trait)}
+.og-branches:has(> .og-branche:only-child)::before{display:none}
+.og-branche{display:flex;flex-direction:column;align-items:center;position:relative}
+.og-branche::before{content:'';position:absolute;top:-22px;left:50%;width:2px;height:22px;background:var(--og-trait)}
+.og-groupe{background:var(--og-bleu);color:#fff;border-radius:99px;padding:6px 16px;font-weight:700;font-size:.9rem;display:flex;gap:8px;align-items:center}
+.og-groupe small{background:rgba(255,255,255,.2);border-radius:99px;padding:0 7px;font-size:.75rem}
+.og-groupe.og-inst{background:#15803d}
+.og-grille{display:grid;grid-template-columns:repeat(2,210px);gap:12px;padding:14px;border:2px solid #dfe7ef;border-radius:16px;background:#f6f9fc}
+.og-grille:has(> .og-boite:only-child){grid-template-columns:210px}
+.og-grille .og-boite{width:auto}
+.og-com{border-top:3px solid var(--og-bleu)} .og-inst{border-top:3px solid #15803d}
+.og-groupe.og-com,.og-groupe.og-inst{border-top:0}
+@media (max-width:700px){
+  .og-branches{flex-direction:column;gap:22px;padding-top:0}
+  .og-branches::before,.og-branche::before{display:none}
+  .og-branche + .og-branche{padding-top:0}
+  .og-grille{grid-template-columns:minmax(0,1fr)!important;width:min(300px,calc(100vw - 48px))}
+  .og-sup{min-width:0;width:min(300px,calc(100vw - 40px))} .og-sup ul{flex-direction:column;align-items:center} .og-sup li{white-space:normal}
+}
+@media print{.og-boite,.og-groupe,.og-tete{-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}}
+`;
+function imprimerOrganigramme() {
+  fenetreImpression('Organigramme ' + param('sigle', 'MMW'), `<style>${CSS_ORGA} @page{size:A4 landscape;margin:12mm}</style>
+    <h1 style="text-align:center">Organigramme du dahira — ${dateFr(AUJ)}</h1>${organigramme(true)}`);
+}
 function formCommission(c = null) {
   modale(c ? 'Modifier la commission' : 'Nouvelle commission', `
     ${champ('Nom', `<input name="nom" required value="${h(c?.nom)}">`, 'Gardez le même libellé que dans le formulaire Google pour que les inscriptions y soient rattachées.')}
@@ -2121,6 +2195,7 @@ function demarrer() {
     else if (!session) { S.user = null; S.profil = null; if (canal) { S.sb.removeChannel(canal); canal = null; } ecranConnexion(); }
   });
 }
+document.getElementById('cssOrga').textContent = CSS_ORGA;
 demarrer();
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
