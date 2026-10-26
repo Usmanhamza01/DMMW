@@ -2047,8 +2047,9 @@ VUES.parametres = () => {
         ${champ('Tranche de cotisation', `<textarea name="msg_tranche" rows="3" ${dis}>${h(p.msg_tranche)}</textarea>`, 'Variables : {prenom} {mois} {montant} {date_limite} {arrieres} {tranche} {matricule} {sigle}')}
         <h3 class="mt" style="margin-bottom:0">Rappel automatique des mensualités</h3>
         <div class="deux">${champ('Rappel automatique', `<select name="rappel_auto" ${dis}>${opts([['false', 'Désactivé'], ['true', 'Activé']], p.rappel_auto || 'false')}</select>`)}
-          ${champ('Jour du mois', `<input name="rappel_auto_jour" type="number" min="1" max="28" value="${h(p.rappel_auto_jour || '5')}" ${dis}>`)}</div>
-        <p class="muted" style="font-size:.85rem;margin:0">Ce jour-là, vers 8 h, le message « Rappel avant le 10 » part pour chaque membre qui n'a pas encore payé le mois : tout seul si l'API WhatsApp Business est configurée dans le script Google, sinon vous recevez un e-mail avec un bouton WhatsApp prêt par membre.</p>
+          ${champ('Jours des rappels', `<input name="rappel_auto_jours" value="${h(p.rappel_auto_jours || p.rappel_auto_jour || '1,5')}" placeholder="1,5" ${dis}>`, 'Avant la date limite, ex. 1,5')}</div>
+        ${champ('Jour de la relance des retards', `<input name="relance_auto_jour" type="number" min="0" max="28" value="${h(p.relance_auto_jour || '11')}" ${dis}>`, 'Après le 10, ex. 11 (0 = pas de relance)')}
+        <p class="muted" style="font-size:.85rem;margin:0">Ces jours-là, vers 8 h, chaque membre qui n'a <b>pas encore payé</b> le mois reçoit le message « Rappel avant le 10 » (les 1er et 5) puis « Retard après le 10 » (le 11). Ceux qui ont déjà cotisé sont exclus automatiquement. Envoi tout seul si l'API WhatsApp Business est configurée dans le script Google, sinon un e-mail vous donne un bouton WhatsApp prêt par membre.</p>
         ${adm ? '<button class="btn prim" style="align-self:flex-start">Enregistrer les messages</button>' : ''}</form></section>
   </div>
   ${adm ? `<div class="grille g2 mt">
