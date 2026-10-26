@@ -246,6 +246,8 @@ dialog .pied{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;flex-w
 .plus-liste .rouge{color:var(--rouge)} .plus-liste .rouge .pic{background:var(--rouge-pale);color:var(--rouge)}
 /* organigramme (styles partagés avec l'impression : CSS_ORGA) */
 .og-defil{overflow-x:auto;padding-bottom:6px}
+.og-defil .og{width:max-content;margin:0 auto}
+.og-astuce{display:none} .og-defil.og-reduit + .og-astuce{display:block}
 /* barre Retour / Actualiser, aperçu d'impression */
 .barre-haut{display:flex;justify-content:space-between;gap:8px;padding:14px 28px 0}
 .ico-btn{display:grid;place-items:center;width:40px;height:40px;border:0;background:none;color:inherit;border-radius:10px;cursor:pointer;flex:none}
@@ -1165,10 +1167,20 @@ VUES.commissions = () => {
       ${anciens.length ? `<details class="mt"><summary>Historique des mandats (${anciens.length})</summary><ul class="liste-ops">${anciens.map(r => `<li><span>${h(nomResp(r))} — ${r.role === 'adjoint' ? 'adjoint' : 'responsable'}, ${h(S.idx.com.get(r.commission_id)?.nom)}</span><small class="muted">${dateFr(r.date_debut)} → ${dateFr(r.date_fin)}</small></li>`).join('')}</ul></details>` : ''}
     </section>
     <section class="panneau mt"><header><h2>Organigramme</h2><div class="outils"><button class="btn petit prim" id="btOrga">${ico('print')} Exporter en PDF / imprimer</button>${boutonsExport('orga')}</div></header>
-      <div class="og-defil">${organigramme()}</div></section>`);
+      <div class="og-defil">${organigramme()}</div>
+      <p class="muted og-astuce" style="font-size:.82rem;margin:8px 0 0">Sur téléphone, l'organigramme est réduit pour tenir dans l'écran : utilisez « Exporter en PDF » pour l'avoir en grand.</p></section>`);
 };
+// Téléphone : l'organigramme garde sa forme d'arbre et se réduit pour tenir dans la largeur de l'écran
+function ajusterOrganigramme() {
+  const box = $('.og-defil'); const og = box?.querySelector('.og'); if (!og) return;
+  og.style.zoom = 1; og.classList.toggle('og-compact', box.clientWidth < 900);
+  const z = Math.min(1, (box.clientWidth - 4) / og.scrollWidth); og.style.zoom = z;
+  box.classList.toggle('og-reduit', z < 1);
+}
+window.addEventListener('resize', debounce(ajusterOrganigramme, 200));
 VUES.commissions.apres = () => {
   $('#btOrga')?.addEventListener('click', imprimerOrganigramme);
+  ajusterOrganigramme();
   $('#btNewCom')?.addEventListener('click', () => formCommission());
   $$('[data-editcom]').forEach(b => b.onclick = () => formCommission(S.idx.com.get(Number(b.dataset.editcom))));
   $$('[data-designer]').forEach(b => b.onclick = () => designer(Number(b.dataset.designer)));
@@ -1233,13 +1245,8 @@ const CSS_ORGA = `
 .og-grille .og-boite{width:auto}
 .og-com{border-top:3px solid var(--og-bleu)} .og-inst{border-top:3px solid #15803d}
 .og-groupe.og-com,.og-groupe.og-inst{border-top:0}
-@media (max-width:700px){
-  .og-branches{flex-direction:column;gap:22px;padding-top:0}
-  .og-branches::before,.og-branche::before{display:none}
-  .og-branche + .og-branche{padding-top:0}
-  .og-grille{grid-template-columns:minmax(0,1fr)!important;width:min(300px,calc(100vw - 48px))}
-  .og-sup{min-width:0;width:min(300px,calc(100vw - 40px))} .og-sup ul{flex-direction:column;align-items:center} .og-sup li{white-space:normal}
-}
+.og-compact .og-grille{grid-template-columns:215px!important}
+.og-compact .og-branches{gap:20px}
 @media print{.og-boite,.og-groupe,.og-tete{-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}}
 `;
 function imprimerOrganigramme() {
