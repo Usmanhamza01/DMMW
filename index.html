@@ -248,6 +248,23 @@ dialog .pied{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;flex-w
 .og-defil{overflow-x:auto;padding-bottom:6px}
 .og-defil .og{width:max-content;margin:0 auto}
 .og-astuce{display:none} .og-defil.og-reduit + .og-astuce{display:block}
+/* présences */
+.seances{display:flex;flex-direction:column;gap:8px}
+.seance{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--trait);border-radius:var(--r-m);text-decoration:none;color:var(--encre);background:var(--surface)}
+.seance:hover{border-color:var(--bleu-2)} .seance b{text-transform:capitalize;display:block} .seance small{color:var(--gris)}
+.seance-ch{display:flex;gap:6px;flex-wrap:wrap}
+.compteurs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;top:0;z-index:4;background:var(--fond);padding:8px 0}
+.compteurs .pas{font-size:.9rem;padding:4px 12px}
+.appel{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:8px}
+.appel-l{background:var(--surface);border:1px solid var(--trait);border-left:5px solid var(--rouge);border-radius:var(--r-m);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.appel-l.st-present{border-left-color:var(--vert)} .appel-l.st-justifie{border-left-color:var(--ambre)}
+.appel-n b{display:block} .appel-n small{color:var(--gris)}
+.appel-b{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px}
+.appel-b button{border:1px solid var(--trait);background:var(--surface);border-radius:10px;padding:10px 6px;font-weight:600;cursor:pointer;color:var(--gris);min-height:44px}
+.appel-b button[aria-pressed="true"].present{background:var(--vert);border-color:var(--vert);color:#fff}
+.appel-b button[aria-pressed="true"].justifie{background:var(--ambre);border-color:var(--ambre);color:#fff}
+.appel-b button[aria-pressed="true"].absent{background:var(--rouge);border-color:var(--rouge);color:#fff}
+.appel-j{display:none} .st-justifie .appel-j{display:block}
 /* barre Retour / Actualiser, aperçu d'impression */
 .barre-haut{display:flex;justify-content:space-between;gap:8px;padding:14px 28px 0}
 .ico-btn{display:grid;place-items:center;width:40px;height:40px;border:0;background:none;color:inherit;border-radius:10px;cursor:pointer;flex:none}
@@ -329,6 +346,8 @@ body.sans-defil{overflow:hidden}
   .bande dd{font-size:1.3rem}
   .grille-mois th:first-child,.grille-mois td:first-child{position:sticky;left:0;z-index:2;background:var(--surface);max-width:130px;box-shadow:1px 0 0 var(--trait)}
   .grille-mois th:first-child{z-index:3}
+  .compteurs{top:52px}
+  .appel{grid-template-columns:minmax(0,1fr)}
   .grille-mois td:first-child{width:130px;min-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .grille-mois td:first-child a{white-space:nowrap}
   table.empile td:empty,table.empile td[data-label=""]::before{display:none}
@@ -345,7 +364,7 @@ body.sans-defil{overflow:hidden}
   .login form .btn{justify-content:center;min-height:48px}
   /* fenêtres : plein écran par le bas */
   dialog{max-width:100vw;width:100vw;margin:auto 0 0;border-radius:18px 18px 0 0}
-  dialog form{max-height:90vh;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+  dialog form{max-height:90vh;padding:18px 16px calc(18px + env(safe-area-inset-bottom));scroll-padding-bottom:96px}
   dialog .pied{position:sticky;bottom:-18px;background:var(--surface);padding:10px 0 4px;margin-bottom:-4px}
   dialog .pied .btn{flex:1;justify-content:center;min-height:48px}
   .tabbar a{min-height:56px;justify-content:center}
@@ -459,6 +478,7 @@ function erreur(e) {
 }
 
 const I = {
+  coche:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
   board:'<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
   users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
   layers:'<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
@@ -503,8 +523,12 @@ const peut = {
   form: () => ['admin', 'secretaire'].includes(role()),
   prive: () => ['admin', 'secretaire'].includes(role()),
   depenses: () => ['admin', 'tresorier', 'bureau'].includes(role()),
+  // présences : admin, secrétariat, bureau ; responsable de l'instance du même nom (ex. responsable « Kourel 1 »)
+  presences: g => ['admin', 'secretaire', 'bureau'].includes(role()) || (role() === 'responsable' && mesInstances().includes(g)),
+  voirPresences: () => ['admin', 'tresorier', 'secretaire', 'bureau'].includes(role()) || (role() === 'responsable' && mesInstances().some(n => CATEGORIES.includes(n))),
   finances: () => ['admin', 'tresorier', 'bureau'].includes(role()) || (role() === 'responsable' && param('responsables_voient_paiements') === 'true'),
 };
+const mesInstances = () => { const mid = S.profil?.membre_id; return mid ? S.responsables.filter(r => r.membre_id === mid && !r.date_fin).map(r => S.commissions.find(c => c.id === r.commission_id)?.nom).filter(Boolean) : []; };
 const annees = () => S.exercices.filter(e => e.type === 'mensualites');
 const campagnes = () => S.exercices.filter(e => e.type === 'cotisation');
 const exoM = () => annees().find(e => e.id === S.exoMId) || annees().at(-1);      // année de mensualités affichée
@@ -528,7 +552,8 @@ async function tout(table, select = '*', ordre = null) {
 async function charger() {
   const fin = peut.finances();
   const vide = Promise.resolve([]);
-  const [params, exercices, commissions, membres, responsables, profils, prive, engagements, echeances, paiements, imputations, depenses, relances, formRep] = await Promise.all([
+  const presOk = peut.voirPresences();
+  const [params, exercices, commissions, membres, responsables, profils, prive, engagements, echeances, paiements, imputations, depenses, relances, formRep, seances, presences] = await Promise.all([
     tout('parametres'), tout('exercices', '*', 'date_debut'), tout('commissions', '*', 'ordre'), tout('membres', '*', 'numero'),
     tout('responsables', '*', 'date_debut'), tout('profils'),
     peut.prive() ? tout('membres_prive') : vide,
@@ -536,9 +561,10 @@ async function charger() {
     fin ? tout('imputations') : vide, peut.depenses() ? tout('depenses', '*', 'date_depense') : vide,
     ['admin', 'tresorier', 'secretaire', 'bureau'].includes(role()) ? tout('relances', '*', 'created_at') : vide,
     peut.form() ? tout('form_reponses', 'id,response_id,horodatage,payload,statut,membre_id,message,recu_le,traite_le', 'recu_le') : vide,
+    presOk ? tout('seances', '*', 'date_seance').catch(() => []) : vide, presOk ? tout('presences').catch(() => []) : vide,
   ]);
   S.params = Object.fromEntries(params.map(p => [p.cle, p.valeur]));
-  Object.assign(S, { exercices, commissions, membres, responsables, profils, engagements, echeances, paiements, imputations, depenses, relances, formRep });
+  Object.assign(S, { exercices, commissions, membres, responsables, profils, engagements, echeances, paiements, imputations, depenses, relances, formRep, seances, presences });
   S.prive = new Map(prive.map(p => [p.membre_id, p]));
   const choix = (type, cle) => { const l = exercices.filter(e => e.type === type); const memo = localStorage.getItem(cle);
     return l.find(e => String(e.id) === memo)?.id || l.find(e => e.actif)?.id || l.at(-1)?.id || null; };
@@ -558,6 +584,7 @@ function indexer() {
   X.impParPay = grp(S.imputations, 'paiement_id');
   X.eng = new Map(S.engagements.map(e => [e.membre_id + '|' + e.exercice_id, e]));
   X.rel = grp(S.relances, 'membre_id');
+  X.presParSeance = grp(S.presences || [], 'seance_id');
 }
 
 /* ===================================================================== règles de gestion (lecture) */
@@ -1406,7 +1433,7 @@ VUES.mensualites = () => {
       lignes: rows.map(([m, s]) => [m.matricule, nomComplet(m), m.mensualite, ...mois.map(k => { const x = s.parMois.get(k); return !x ? '' : x.reste === 0 ? x.paye : x.paye ? `${x.paye}/${x.montant_du}` : echu(x) ? 'impayé' : ''; }), s.mensPaye, s.mensArr]) },
     { nom: 'Par mois', entetes: ['Mois', 'Membres', 'Attendu', 'Encaissé', 'Reste', 'Payés à temps', 'Payés en retard', 'Impayés'], lignes: recapMois.map(r => [moisLong(r.k), r.n, r.du, r.paye, r.reste, r.aTemps, r.enRetard, r.impayes]) },
     { nom: 'Par commission', entetes: ['Commission', 'Membres', 'Attendu échu', 'Encaissé', 'Arriérés'], lignes: parCom }] });
-  return page('Mensualités', `${h(e.libelle)} · janvier → décembre · à verser avant le ${e.jour_limite} de chaque mois${peut.argent() ? ' · touchez une case pour encaisser' : ''}`, `${selAnnee()}${boutonsExport('mens', true)}`, `
+  return page('Mensualités', `${h(e.libelle)} · ${moisLong(moisExercice(e)[0] || '2026-01').split(' ')[0]} → ${moisLong(moisExercice(e).at(-1) || '2026-12').split(' ')[0]} · à verser avant le ${e.jour_limite} de chaque mois${peut.argent() ? ' · touchez une case pour encaisser' : ''}`, `${selAnnee()}${boutonsExport('mens', true)}`, `
     <dl class="bande treillis" style="--n:4"><div><dt>Attendu (mois échus)</dt><dd>${fcfa(tot('mensEchuDu'))}</dd></div>
       <div><dt>Encaissé</dt><dd>${fcfa(tot('mensPaye'))}</dd><small>${pct(tot('mensEchuDu') - tot('mensArr'), tot('mensEchuDu'))} % des mois échus</small></div>
       <div><dt>Arriérés</dt><dd>${fcfa(tot('mensArr'))}</dd><small>${somme(rows, ([, s]) => s.moisImpayes.length)} mois en retard</small></div>
@@ -1510,11 +1537,19 @@ function vueDiffusion(F) {
       </section>
       <section class="panneau"><h2>3. Envoyer</h2>
         ${!avecTel.length ? '<p class="muted">Aucun destinataire.</p>' : !F.msg.trim() ? '<p class="muted">Écrivez d\'abord le message.</p>' : `
-        <p style="margin-top:0"><b>Un par un</b> : chaque clic ouvre WhatsApp avec le message déjà écrit pour la personne suivante.</p>
-        ${suivant ? `<button class="btn vert" id="dSuivant" style="font-size:1rem;padding:12px 18px">${ico('wa')} Envoyer à ${h(nomComplet(suivant))} (${F.pos + 1} / ${avecTel.length})</button>
+        <p style="margin-top:0"><b>À tous d'un coup</b> : le message part en un seul envoi vers votre <b>liste de diffusion</b> ou votre <b>groupe WhatsApp</b> (à choisir dans WhatsApp).</p>
+        <button class="btn vert" id="dTous" style="font-size:1rem;padding:12px 18px">${ico('wa')} Envoyer à tous d'un coup</button>
+        <details class="mt"><summary style="cursor:pointer;font-weight:600">Créer la liste de diffusion (une seule fois)</summary>
+          <ol style="margin:8px 0 0;padding-left:20px;font-size:.9rem;line-height:1.55">
+            <li>Touchez <b>Contacts (.vcf)</b> ci-dessous et ouvrez le fichier sur le téléphone : les numéros s'ajoutent à vos contacts (préfixe « ${h(param('sigle', 'MMW'))} »).</li>
+            <li>Dans WhatsApp : <b>⋮</b> (Android) ou <b>Discussions</b> (iPhone) › <b>Nouvelle diffusion</b> › cochez les membres › ✓. Nommez-la « ${h(param('sigle', 'MMW'))} — tous » (256 contacts au maximum par liste).</li>
+            <li>Ensuite, à chaque message : <b>Envoyer à tous d'un coup</b> › choisissez la liste.</li></ol>
+          <p class="muted" style="font-size:.85rem;margin:8px 0 0">Seuls les membres qui ont enregistré <b>votre</b> numéro dans leurs contacts reçoivent les diffusions : demandez-leur de l'ajouter. Sinon, utilisez un groupe WhatsApp « Annonces » où seuls les administrateurs écrivent : tout le monde le reçoit.</p></details>
+        <h3 class="mt" style="margin-bottom:4px">Ou un par un, personnalisé</h3>
+        <p class="muted" style="font-size:.88rem;margin:0 0 8px">Chaque clic ouvre WhatsApp avec le message écrit pour la personne suivante, avec son prénom.</p>
+        ${suivant ? `<button class="btn" id="dSuivant">${ico('wa')} Envoyer à ${h(nomComplet(suivant))} (${F.pos + 1} / ${avecTel.length})</button>
           ${F.pos ? ' <button class="btn" id="dReprendre">Recommencer au début</button>' : ''}` : `<div class="alerte bleu">Terminé : ${avecTel.length} message(s) préparé(s). <button class="btn petit" id="dReprendre">Recommencer</button></div>`}
-        <h3 class="mt">Ou par une liste de diffusion WhatsApp</h3>
-        <p class="muted" style="font-size:.88rem;margin:4px 0 8px">Une liste de diffusion envoie le message à tous en un seul envoi. Téléchargez les contacts, importez-les dans votre téléphone (Contacts › Importer), puis dans WhatsApp : ⋮ › Nouvelle diffusion › cochez les membres. Seuls ceux qui ont enregistré votre numéro reçoivent les diffusions.</p>
+        <h3 class="mt" style="margin-bottom:6px">Outils</h3>
         <div class="outils"><button class="btn" id="dVcf">${ico('dl')} Contacts (.vcf)</button><button class="btn" id="dCopNum">Copier les numéros</button><button class="btn" id="dCopMsg">Copier le message</button></div>`}
       </section>
     </div>
@@ -1535,12 +1570,118 @@ function apresDiffusion(F) {
   $('#dSuivant')?.addEventListener('click', () => { envoyer(dest[F.pos]); F.pos++; router(); });
   $$('#dReprendre').forEach(b => b.onclick = () => { F.pos = 0; router(); });
   $$('[data-dwa]').forEach(b => b.onclick = () => envoyer(S.idx.membre.get(b.dataset.dwa)));
+  $('#dTous')?.addEventListener('click', () => {
+    const txt = F.msg.replace(/\s*\{prenom\}\s*,?/g, ' ').replace(/\{(\w+)\}/g, '').replace(/ {2,}/g, ' ').replace(/ ,/g, ',').trim();
+    window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank', 'noopener');
+    if (peut.relancer()) ins('relances', dest.map(m => ({ membre_id: m.id, type: 'autre', canal: 'WhatsApp (diffusion)', message: txt }))).catch(() => {});
+  });
   $('#dCopMsg')?.addEventListener('click', () => { navigator.clipboard?.writeText(F.msg.replace(/\{prenom\}\s*/g, '')); toast('Message copié (sans {prenom})'); });
   $('#dCopNum')?.addEventListener('click', () => { navigator.clipboard?.writeText(dest.map(m => '+221' + m.telephone_norm).join('\n')); toast(dest.length + ' numéros copiés'); });
   $('#dVcf')?.addEventListener('click', () => {
     const vcf = dest.map(m => `BEGIN:VCARD\r\nVERSION:3.0\r\nFN:${param('sigle', 'MMW')} ${m.prenom} ${m.nom}\r\nN:${m.nom};${m.prenom};;;\r\nTEL;TYPE=CELL:+221${m.telephone_norm}\r\nORG:${nomAsso()}\r\nCATEGORIES:${param('sigle', 'MMW')}\r\nEND:VCARD`).join('\r\n');
     telecharger(new Blob([vcf], { type: 'text/vcard' }), `MMW_contacts_${AUJ}.vcf`); });
 }
+
+/* ---------- Présences aux rencontres (Kourel 1 par défaut, chaque dimanche) */
+const STP = { present: ['Présent', 'ok'], justifie: ['Absent justifié', 'at'], absent: ['Absent', 'ko'] };
+const dateLongue = d => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const dernierDimanche = () => { const d = new Date(AUJ + 'T12:00:00'); d.setDate(d.getDate() - d.getDay()); return iso(d); };
+const membresGroupe = g => S.membres.filter(m => m.statut === 'actif' && m.categorie === g).sort((a, b) => (a.nom + a.prenom).localeCompare(b.nom + b.prenom, 'fr'));
+function etatSeance(se) {
+  const recs = new Map((S.idx.presParSeance.get(se.id) || []).map(p => [p.membre_id, p]));
+  const lignes = membresGroupe(se.groupe).map(m => { const p = recs.get(m.id); return { m, statut: p?.statut || 'absent', justification: p?.justification || '' }; });
+  // membres pointés qui ont quitté le groupe depuis : on les garde dans le compte rendu
+  for (const [mid, p] of recs) if (!lignes.some(l => l.m.id === mid) && S.idx.membre.get(mid)) lignes.push({ m: S.idx.membre.get(mid), statut: p.statut, justification: p.justification || '' });
+  const n = k => lignes.filter(l => l.statut === k).length;
+  return { lignes, presents: n('present'), justifies: n('justifie'), absents: n('absent'), total: lignes.length };
+}
+function texteSeance(se) {
+  const e = etatSeance(se); const nm = l => nomComplet(l.m);
+  const P = e.lignes.filter(l => l.statut === 'present'), J = e.lignes.filter(l => l.statut === 'justifie'), A = e.lignes.filter(l => l.statut === 'absent');
+  return `*${se.groupe} — rencontre du ${dateLongue(se.date_seance)}*${se.titre ? '\n' + se.titre : ''}\n\n`
+    + `Présents : *${e.presents} / ${e.total}* (${pct(e.presents, e.total)} %)\n\n`
+    + `✅ Présents (${P.length}) :\n${P.map(l => '• ' + nm(l)).join('\n') || '—'}\n\n`
+    + `🟡 Absents justifiés (${J.length}) :\n${J.map(l => '• ' + nm(l) + (l.justification ? ' — ' + l.justification : '')).join('\n') || '—'}\n\n`
+    + `❌ Absents (${A.length}) :\n${A.map(l => '• ' + nm(l)).join('\n') || '—'}\n\n— ${param('sigle', 'MMW')}`;
+}
+VUES.presences = id => {
+  const F = VUES.presences.f ||= { groupe: CATEGORIES.find(g => peut.presences(g)) || 'Kourel 1' };
+  if (id) return vueSeance(Number(id));
+  const g = F.groupe; const mem = membresGroupe(g); const ecrit = peut.presences(g);
+  const seances = (S.seances || []).filter(x => x.groupe === g).sort((a, b) => b.date_seance.localeCompare(a.date_seance));
+  const etats = seances.map(x => [x, etatSeance(x)]);
+  const taux = etats.length ? Math.round(somme(etats, ([, e]) => pct(e.presents, e.total)) / etats.length) : 0;
+  const bilan = mem.map(m => { const c = { present: 0, justifie: 0, absent: 0 }; etats.forEach(([x, e]) => { const l = e.lignes.find(l => l.m.id === m.id); if (l) c[l.statut]++; }); return [m, c]; });
+  EXPORTS.bilanPres = () => ({ nom: 'MMW_presences_' + g.replace(/\W+/g, '_'), titre: `Présences ${g} — bilan au ${dateFr(AUJ)}`,
+    entetes: ['Matricule', 'Membre', ...seances.slice().reverse().map(x => dateFr(x.date_seance)), 'Présent', 'Justifié', 'Absent', 'Taux (%)'],
+    lignes: bilan.map(([m, c]) => [m.matricule, nomComplet(m), ...seances.slice().reverse().map(x => { const l = etatSeance(x).lignes.find(l => l.m.id === m.id); return { present: 'P', justifie: 'J', absent: 'A' }[l?.statut] || ''; }),
+      c.present, c.justifie, c.absent, pct(c.present, seances.length)]) });
+  const dernier = etats[0];
+  return page(`${g} · présences`, `Rencontres du dimanche · ${mem.length} membre${mem.length > 1 ? 's' : ''} dans la catégorie ${h(g)}`,
+    `<select id="pGroupe" aria-label="Groupe">${opts(CATEGORIES.filter(x => peut.presences(x) || ['admin', 'tresorier', 'secretaire', 'bureau'].includes(role())), g)}</select>${boutonsExport('bilanPres', true)}${ecrit ? `<button class="btn prim" id="btSeance">${ico('plus')} Nouvelle rencontre</button>` : ''}`, `
+    <dl class="bande treillis" style="--n:3"><div><dt>Rencontres tenues</dt><dd>${seances.length}</dd></div>
+      <div><dt>Taux moyen de présence</dt><dd>${taux} %</dd></div>
+      <div><dt>Dernière rencontre</dt><dd>${dernier ? `${dernier[1].presents}<span style="font-size:1rem;opacity:.75"> / ${dernier[1].total}</span>` : '—'}</dd><small>${dernier ? dateFr(dernier[0].date_seance) : 'aucune'}</small></div></dl>
+    ${!mem.length ? `<div class="alerte">Aucun membre actif dans la catégorie « ${h(g)} ». Renseignez la catégorie sur les fiches (Modifier).</div>` : ''}
+    <section class="panneau"><h2>Rencontres</h2>
+      <div class="seances">${etats.map(([x, e]) => `<a class="seance" href="#/presences/${x.id}"><div><b>${h(dateLongue(x.date_seance))}</b>${x.titre ? `<small>${h(x.titre)}</small>` : ''}</div>
+        <div class="seance-ch"><span class="pas ok">${e.presents} présents</span>${e.justifies ? `<span class="pas at">${e.justifies} justifiés</span>` : ''}${e.absents ? `<span class="pas ko">${e.absents} absents</span>` : ''}</div></a>`).join('') || `<p class="muted">Aucune rencontre enregistrée.${ecrit ? ' Touchez « Nouvelle rencontre » le dimanche pour faire l\'appel.' : ''}</p>`}</div></section>
+    ${seances.length ? `<section class="panneau mt"><h2>Assiduité par membre</h2><div class="tab-wrap"><table><thead><tr><th>Membre</th><th class="n">Présent</th><th class="n">Justifié</th><th class="n">Absent</th><th class="n">Taux</th></tr></thead><tbody>
+      ${bilan.sort((a, b) => b[1].present - a[1].present).map(([m, c]) => `<tr><td>${h(nomComplet(m))}</td><td class="n">${c.present}</td><td class="n">${c.justifie}</td><td class="n">${c.absent}</td><td class="n"><b>${pct(c.present, seances.length)} %</b></td></tr>`).join('')}</tbody></table></div></section>` : ''}`);
+};
+function vueSeance(id) {
+  const se = (S.seances || []).find(x => x.id === id); if (!se) return page('Rencontre introuvable', '', '', '<p><a href="#/presences">Retour aux rencontres</a></p>');
+  const e = etatSeance(se); const ecrit = peut.presences(se.groupe);
+  EXPORTS.seance = () => ({ nom: `MMW_presence_${se.groupe.replace(/\W+/g, '_')}_${se.date_seance}`, titre: `${se.groupe} — rencontre du ${dateLongue(se.date_seance)} : ${e.presents} présents sur ${e.total}`,
+    entetes: ['Matricule', 'Membre', 'Téléphone', 'Statut', 'Justification'], lignes: e.lignes.map(l => [l.m.matricule, nomComplet(l.m), l.m.telephone || '', STP[l.statut][0], l.justification]) });
+  return `<div class="entete"><div><p style="margin:0"><a href="#/presences">‹ ${h(se.groupe)} · rencontres</a></p><h1 style="text-transform:capitalize">${h(dateLongue(se.date_seance))}</h1>${se.titre ? `<p>${h(se.titre)}</p>` : ''}</div>
+    <div class="outils"><button class="btn vert" id="btWaPres">${ico('wa')} Envoyer le rapport</button>${boutonsExport('seance', true)}${ecrit ? `<button class="btn" id="btModSeance">Modifier</button>` : ''}${peut.admin() ? `<button class="btn danger" id="btSupSeance">${ico('poubelle')} Supprimer</button>` : ''}</div></div>
+    <div class="compteurs" id="cptPres"></div>
+    ${ecrit ? `<div class="outils" style="margin:10px 0 12px"><button class="btn petit" id="btTousPres">Tous présents</button><button class="btn petit" id="btTousAbs">Tout remettre à absent</button><span class="muted" style="font-size:.85rem">Chaque choix est enregistré tout de suite.</span></div>` : ''}
+    <div class="appel">${e.lignes.map(l => `<div class="appel-l st-${l.statut}" data-m="${l.m.id}">
+      <div class="appel-n"><b>${h(nomComplet(l.m))}</b><small>${h(l.m.matricule)}${l.m.telephone ? ' · ' + h(l.m.telephone) : ''}</small></div>
+      <div class="appel-b" role="group" aria-label="Présence de ${h(nomComplet(l.m))}">${Object.entries(STP).map(([k, v]) => `<button type="button" data-st="${k}" class="${k}" aria-pressed="${l.statut === k}" ${ecrit ? '' : 'disabled'}>${k === 'present' ? '✓ Présent' : k === 'justifie' ? 'Justifié' : 'Absent'}</button>`).join('')}</div>
+      <input class="appel-j" placeholder="Justification (maladie, voyage, travail…)" value="${h(l.justification)}" ${ecrit ? '' : 'disabled'}>
+    </div>`).join('') || '<p class="muted">Aucun membre dans ce groupe.</p>'}</div>`;
+}
+VUES.presences.apres = id => {
+  const F = VUES.presences.f;
+  if (!id) {
+    $('#pGroupe')?.addEventListener('change', ev => { F.groupe = ev.target.value; router(); });
+    $('#btSeance')?.addEventListener('click', () => modale('Nouvelle rencontre', `
+      ${champ('Date', `<input type="date" name="date_seance" value="${dernierDimanche()}" max="${AUJ}" required>`, 'Par défaut : le dernier dimanche')}
+      ${champ('Thème ou lieu (facultatif)', '<input name="titre" placeholder="ex. Kourel chez Serigne Fallou">')}`, { valider: 'Faire l\'appel', onSubmit: async v => {
+        const deja = (S.seances || []).find(x => x.groupe === F.groupe && x.date_seance === v.date_seance);
+        if (deja) { location.hash = '#/presences/' + deja.id; return; }
+        const [n] = await ins('seances', { groupe: F.groupe, date_seance: v.date_seance, titre: v.titre || null });
+        await rafraichir('Rencontre créée : cochez les présents'); location.hash = '#/presences/' + n.id; } }));
+    return;
+  }
+  const se = S.seances.find(x => x.id === Number(id)); if (!se) return;
+  const compteurs = () => { const e = etatSeance(se); $('#cptPres').innerHTML = `<span class="pas ok">✓ ${e.presents} présent${e.presents > 1 ? 's' : ''}</span><span class="pas at">${e.justifies} justifié${e.justifies > 1 ? 's' : ''}</span><span class="pas ko">${e.absents} absent${e.absents > 1 ? 's' : ''}</span><span class="muted">sur ${e.total} · ${pct(e.presents, e.total)} %</span>`; };
+  compteurs();
+  const enregistrer = async (mid, statut, justification) => {
+    const rec = { seance_id: se.id, membre_id: mid, statut, justification: statut === 'justifie' ? (justification || null) : null };
+    const l = S.presences.find(p => p.seance_id === se.id && p.membre_id === mid); l ? Object.assign(l, rec) : S.presences.push(rec);
+    indexer(); compteurs();
+    const { error } = await S.sb.from('presences').upsert(rec, { onConflict: 'seance_id,membre_id' }); if (error) erreur(error);
+  };
+  $$('.appel-l').forEach(row => {
+    const mid = row.dataset.m; const j = $('.appel-j', row);
+    $$('[data-st]', row).forEach(b => b.onclick = () => { const st = b.dataset.st; row.className = 'appel-l st-' + st; $$('[data-st]', row).forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      enregistrer(mid, st, j.value.trim()); if (st === 'justifie') setTimeout(() => j.focus(), 50); });
+    j.addEventListener('change', () => enregistrer(mid, 'justifie', j.value.trim()));
+  });
+  const tous = async st => { const e = etatSeance(se); const recs = e.lignes.map(l => ({ seance_id: se.id, membre_id: l.m.id, statut: st, justification: null }));
+    const { error } = await S.sb.from('presences').upsert(recs, { onConflict: 'seance_id,membre_id' }); if (error) return erreur(error); await rafraichir(st === 'present' ? 'Tout le monde est présent' : 'Liste remise à zéro'); };
+  $('#btTousPres')?.addEventListener('click', () => tous('present'));
+  $('#btTousAbs')?.addEventListener('click', () => { if (confirm('Remettre tout le monde à « absent » ?')) tous('absent'); });
+  $('#btWaPres').onclick = () => window.open('https://wa.me/?text=' + encodeURIComponent(texteSeance(se)), '_blank', 'noopener');
+  $('#btModSeance')?.addEventListener('click', () => modale('Modifier la rencontre', `${champ('Date', `<input type="date" name="date_seance" value="${se.date_seance}" max="${AUJ}" required>`)}${champ('Thème ou lieu', `<input name="titre" value="${h(se.titre)}">`)}`,
+    { onSubmit: async v => { await maj('seances', se.id, { date_seance: v.date_seance, titre: v.titre || null }); await rafraichir('Rencontre modifiée'); } }));
+  $('#btSupSeance')?.addEventListener('click', async () => { if (!confirm('Supprimer cette rencontre et sa liste de présence ?')) return;
+    const { error } = await S.sb.from('seances').delete().eq('id', se.id); if (error) return erreur(error); location.hash = '#/presences'; await rafraichir('Rencontre supprimée'); });
+};
 
 /* ---------- Dépenses */
 VUES.depenses = () => {
@@ -1875,7 +2016,7 @@ VUES.parametres = () => {
   const adm = peut.admin(); const p = S.params; const dis = adm ? '' : 'disabled';
   return page('Paramètres', adm ? '' : 'Consultation : seuls les administrateurs modifient ces réglages.', '', `
   <div class="grille g2">
-  <section class="panneau"><header><h2>Mensualités (janvier → décembre)</h2>${adm ? '<button class="btn petit prim" id="btAnnee">Nouvelle année</button>' : ''}</header>
+  <section class="panneau"><header><h2>Mensualités (une année par ligne)</h2>${adm ? '<button class="btn petit prim" id="btAnnee">Nouvelle année</button>' : ''}</header>
     <div class="tab-wrap"><table><thead><tr><th>Année</th><th>Mois</th><th>Limite</th><th></th></tr></thead><tbody>
     ${annees().map(e => `<tr><td><b>${h(e.libelle)}</b> ${e.actif ? '<span class="pas ok">en cours</span>' : ''}${e.cloture ? ' <span class="pas neutre">clôturée</span>' : ''}</td><td style="white-space:nowrap">${moisCourt(e.date_debut.slice(0, 7))} → ${moisCourt(e.date_fin.slice(0, 7))}</td><td style="white-space:nowrap">avant le ${e.jour_limite}</td>
       <td style="white-space:nowrap">${adm ? `<button class="btn petit" data-editexo="${e.id}">Modifier</button>${e.actif ? '' : ` <button class="btn petit" data-actexo="${e.id}">Rendre courante</button>`}${!e.cloture ? ` <button class="btn petit" data-genexo="${e.id}">Générer</button>` : ''}` : ''}</td></tr>`).join('')}
@@ -2023,7 +2164,7 @@ function remiseAZero() {
   });
 }
 async function sauvegarde(fmt) {
-  const tables = ['parametres', 'exercices', 'profils', 'commissions', 'membres', 'membres_prive', 'historique_affectations', 'responsables', 'engagements', 'echeances', 'paiements', 'imputations', 'depenses', 'relances', 'form_reponses', 'journal'];
+  const tables = ['parametres', 'exercices', 'profils', 'commissions', 'membres', 'membres_prive', 'historique_affectations', 'responsables', 'engagements', 'echeances', 'paiements', 'imputations', 'depenses', 'relances', 'form_reponses', 'seances', 'presences', 'journal'];
   toast('Préparation de la sauvegarde…');
   try {
     const data = {}; for (const t of tables) data[t] = await tout(t);
@@ -2038,7 +2179,7 @@ async function sauvegarde(fmt) {
 function nav() {
   const fin = peut.finances();
   return [
-    ['tableau', 'Tableau de bord', 'board', true], ['etat', 'État d\'un membre', 'search', true], ['membres', 'Adhérents', 'users', true], ['commissions', 'Commissions et bureau', 'layers', true], ['-'],
+    ['tableau', 'Tableau de bord', 'board', true], ['etat', 'État d\'un membre', 'search', true], ['membres', 'Adhérents', 'users', true], ['commissions', 'Commissions et bureau', 'layers', true], ['presences', 'Kourel 1 · présences', 'coche', peut.voirPresences()], ['-'],
     ['cartes', 'Cartes de membre', 'card', fin], ['cotisations', 'Cotisations annuelles', 'coins', fin], ['mensualites', 'Mensualités', 'cal', fin],
     ['encaissements', 'Encaissements', 'list', fin], ['messages', 'Messages', 'wa', peut.relancer() || (fin && role() !== 'responsable')], ['depenses', 'Dépenses', 'out', peut.depenses()], ['-'],
     ['rapports', 'Rapports', 'doc', true], ['import', 'Import Excel', 'up', peut.admin()], ['formulaire', 'Formulaire Google', 'form', peut.form()], ['parametres', 'Paramètres', 'gear', true],
@@ -2081,7 +2222,7 @@ VUES.plus = () => {
   const dansBarre = new Set(TABBAR().map(x => x[0]));
   const items = new Map(nav().filter(x => x[0] !== '-' && !dansBarre.has(x[0])).map(x => [x[0], x]));
   const nb = S.formRep.filter(r => ['doublon', 'erreur'].includes(r.statut)).length;
-  const groupes = [['Membres', ['etat', 'membres', 'commissions']], ['Argent', ['encaissements', 'mensualites', 'cotisations', 'cartes', 'depenses']],
+  const groupes = [['Membres', ['presences', 'etat', 'membres', 'commissions']], ['Argent', ['encaissements', 'mensualites', 'cotisations', 'cartes', 'depenses']],
     ['Communication', ['messages', 'formulaire']], ['Outils', ['rapports', 'import', 'parametres']]];
   const theme = { '': 'automatique', light: 'clair', dark: 'sombre' }[localStorage.getItem('mmw_theme') || ''];
   return `<div class="plus-compte"><div class="ini" aria-hidden="true">${h((S.profil.nom || S.user.email || '?').slice(0, 2).toUpperCase())}</div>
