@@ -270,6 +270,7 @@ body.sans-defil{overflow:hidden}
 .login .droite{display:grid;place-items:center;padding:24px}
 .login form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px}
 .chargement{min-height:60vh;display:grid;place-items:center;color:var(--gris)}
+.roue{width:34px;height:34px;border-radius:50%;border:3px solid var(--bleu-pale);border-top-color:#0b3d73;margin:0 auto 10px;animation:tourne .8s linear infinite}
 
 @media (max-width: 900px){
   .app{grid-template-columns:minmax(0,1fr)}
@@ -369,8 +370,9 @@ function mmwSecours(detail) {
     + '<button onclick="mmwReinit()" style="padding:10px 16px;margin:4px;border-radius:8px;border:1px solid #0b3d73;background:#fff;color:#0b3d73;cursor:pointer">Ressaisir l\'URL et la clé Supabase</button></p></div>';
 }
 function mmwReinit() {
-  try { Object.keys(localStorage).forEach(function (k) { if (/^mmw_cfg_|^mmw-auth-/.test(k)) localStorage.removeItem(k); }); } catch (e) {}
+  try { Object.keys(localStorage).forEach(function (k) { if (/^mmw_cfg_|^mmw-auth-|^sb-/.test(k)) localStorage.removeItem(k); }); } catch (e) {}
   try { if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(function (r) { r.forEach(function (x) { x.unregister(); }); }); } catch (e) {}
+  try { if (window.caches) caches.keys().then(function (k) { k.forEach(function (n) { caches.delete(n); }); }); } catch (e) {}
   location.href = location.pathname;
 }
 window.addEventListener('error', function (e) {
@@ -2181,14 +2183,26 @@ async function emailDe(saisi) {
   return data || null;
 }
 async function sortir() { await S.sb.auth.signOut(); }
+// Si la base ne répond pas, on l'explique au lieu de laisser un écran vide
+const avecDelai = (promesse, ms) => Promise.race([promesse, new Promise((_, ko) => setTimeout(() => ko(new Error('DELAI')), ms))]);
+function ecranBloque(detail) {
+  $('#racine').innerHTML = `<div class="chargement"><div style="max-width:460px;text-align:center;padding:16px">
+    <p style="font-weight:600;color:#0b3d73;font-size:1.1rem">Les données ne se chargent pas.</p>
+    <p class="muted">${detail}</p>
+    <p><button class="btn prim" onclick="location.reload()">Réessayer</button> <button class="btn" onclick="mmwReinit()">Réinitialiser l'application</button></p>
+    <p class="muted" style="font-size:.82rem">« Réinitialiser » vide la mémoire de l'application sur cet appareil (rien n'est effacé dans la base) ; il faudra vous reconnecter.</p></div></div>`;
+}
 async function apresConnexion(session) {
   S.user = session.user;
-  const { data: prof, error } = await S.sb.from('profils').select('*').eq('user_id', S.user.id).maybeSingle();
+  $('#racine').innerHTML = '<div class="chargement"><div style="text-align:center"><div class="roue"></div><p>Chargement des données…</p></div></div>';
+  let prof, error;
+  try { ({ data: prof, error } = await avecDelai(S.sb.from('profils').select('*').eq('user_id', S.user.id).maybeSingle(), 20000)); }
+  catch (e) { S.user = null; return ecranBloque('La base Supabase ne répond pas. Vérifiez la connexion internet ; si le projet Supabase est en pause, relancez-le (supabase.com › Restore project).'); }
   if (error) { ecranConnexion('Base non initialisée : exécutez 01_schema.sql dans Supabase. (' + error.message + ')'); return; }
   if (!prof || !prof.actif) { await S.sb.auth.signOut(); ecranConnexion(prof ? 'Votre accès a été suspendu par un administrateur.' : 'Compte sans profil : demandez à un administrateur.'); return; }
   S.profil = prof;
-  $('#racine').innerHTML = '<div class="chargement">Chargement des données…</div>';
-  try { await charger(); } catch (e) { erreur(e); $('#racine').innerHTML = '<div class="chargement"><div><p>Impossible de charger les données.</p><button class="btn prim" onclick="location.reload()">Réessayer</button></div></div>'; return; }
+  try { await avecDelai(charger(), 45000); }
+  catch (e) { S.user = null; if (e.message !== 'DELAI') console.error(e); return ecranBloque(e.message === 'DELAI' ? 'Le chargement prend trop de temps (connexion lente ou coupée).' : 'Erreur : ' + h(e.message)); }
   coquille(); router(); tempsReel();
 }
 let canal = null;
@@ -2211,11 +2225,13 @@ function demarrer() {
     S.sb = window.supabase.createClient(String(cfg.SUPABASE_URL).trim().replace(/\/$/, ''), String(cfg.SUPABASE_ANON_KEY).trim(), { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'mmw-auth-' + S.env } });
   } catch (e) { return mmwSecours('Connexion à Supabase impossible : ' + h(e.message)); }
   let enCours = null;
-  S.sb.auth.onAuthStateChange((ev, session) => {
+  // Important : ne jamais appeler Supabase directement dans ce rappel (blocage connu de supabase-js,
+  // surtout sur téléphone quand l'application revient au premier plan et renouvelle la session) → setTimeout.
+  S.sb.auth.onAuthStateChange((ev, session) => setTimeout(() => {
     if (ev === 'PASSWORD_RECOVERY') setTimeout(() => modale('Nouveau mot de passe', champ('Nouveau mot de passe', '<input type="password" name="mdp" minlength="8" required>'), { onSubmit: async v => { const { error } = await S.sb.auth.updateUser({ password: v.mdp }); if (error) throw error; toast('Mot de passe modifié'); } }), 300);
     if (session && (!S.user || S.user.id !== session.user.id)) { if (enCours) return; enCours = apresConnexion(session).finally(() => enCours = null); }
     else if (!session) { S.user = null; S.profil = null; if (canal) { S.sb.removeChannel(canal); canal = null; } ecranConnexion(); }
-  });
+  }, 0));
 }
 document.getElementById('cssOrga').textContent = CSS_ORGA;
 demarrer();
