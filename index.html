@@ -1189,7 +1189,7 @@ function organigramme(pourImpression = false) {
   const eff = c => actifs.filter(m => m.commission_id === c.id).length;
   const ligne = r => { const m = S.idx.membre.get(r.membre_id); return `<li><span class="og-role">${r.role === 'adjoint' ? 'Adjoint' : 'Responsable'}</span><span class="og-nom">${h(m ? nomComplet(m) : r.nom_libre)}</span>${m?.telephone && !pourImpression ? '' : ''}</li>`; };
   const boite = (c, cls = '') => { const rs = responsablesActuels(c.id).sort((a, b) => (a.role === 'adjoint') - (b.role === 'adjoint'));
-    return `<div class="og-boite ${cls}"><div class="og-titre">${h(c.nom)}${c.type === 'commission' ? `<small>${eff(c)} membre${eff(c) > 1 ? 's' : ''}</small>` : ''}</div>
+    return `<div class="og-boite ${cls}"><div class="og-titre">${h(c.nom)}${cls === 'og-sup' ? '<small class="og-sous">Administrateurs principaux</small>' : ''}${c.type === 'commission' ? `<small>${eff(c)} membre${eff(c) > 1 ? 's' : ''}</small>` : ''}</div>
       <ul>${rs.map(ligne).join('') || '<li class="og-vide">Poste à pourvoir</li>'}</ul></div>`; };
   const sup = S.commissions.filter(c => c.type === 'instance' && c.actif && /supervi/i.test(c.nom));
   const coms = S.commissions.filter(c => c.type === 'commission' && c.actif);
@@ -1217,6 +1217,7 @@ const CSS_ORGA = `
 .og-tete b{display:block;font-size:1rem} .og-tete small{opacity:.85;font-size:.8rem}
 .og-sup{background:#e3edf6;border-color:#b7cde3;width:auto;min-width:300px;max-width:560px} .og-sup .og-titre{justify-content:center}
 .og-sup .og-role{display:none}
+.og-sup .og-titre{flex-direction:column;align-items:center;gap:0} .og-sous{font-weight:500;color:#5b6875;font-size:.75rem}
 .og-sup ul{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 22px} .og-sup li{white-space:nowrap} .og-sup li{border-top:0;text-align:center}
 .og-trait{width:2px;height:22px;background:var(--og-trait)}
 .og-branches{display:flex;gap:28px;justify-content:center;position:relative;padding-top:22px}
@@ -1242,8 +1243,22 @@ const CSS_ORGA = `
 @media print{.og-boite,.og-groupe,.og-tete{-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}}
 `;
 function imprimerOrganigramme() {
-  fenetreImpression('Organigramme ' + param('sigle', 'MMW'), `<style>${CSS_ORGA} @page{size:A4 landscape;margin:12mm}</style>
-    <h1 style="text-align:center">Organigramme du dahira — ${dateFr(AUJ)}</h1>${organigramme(true)}`);
+  // Une seule page A4 paysage : l'organigramme est réduit automatiquement s'il dépasse la page
+  fenetreImpression('Organigramme ' + param('sigle', 'MMW'), `<style>${CSS_ORGA}
+    @page{size:A4 landscape;margin:8mm}
+    .og-page{width:1040px;margin:0 auto;transform-origin:top center}
+    .og-page h1{text-align:center;margin:0 0 6px;font-size:18px}
+    @media print{body{padding:0}.tete{margin-bottom:6px;padding-bottom:6px}.pied{display:none}html,body{height:auto;overflow:hidden}}
+    </style>
+    <div class="og-page" id="ogPage"><h1>Organigramme du dahira — ${dateFr(AUJ)}</h1>${organigramme(true)}</div>
+    <script>
+      function ajuster(){ var p=document.getElementById('ogPage'); p.style.zoom=1;
+        var dispo=Math.min(window.innerWidth||1040, 1090), haut=640;   /* A4 paysage utile ≈ 1090 × 720 px, en-tête déduit */
+        var z=Math.min(1, (dispo-20)/p.scrollWidth, haut/p.scrollHeight); p.style.zoom=z; }
+      window.addEventListener('load', ajuster); window.addEventListener('resize', ajuster);
+      window.addEventListener('beforeprint', function(){ var p=document.getElementById('ogPage'); p.style.zoom=1; p.style.zoom=Math.min(1, 1050/p.scrollWidth, 640/p.scrollHeight); });
+      window.addEventListener('afterprint', ajuster);
+    <\/script>`);
 }
 function formCommission(c = null) {
   modale(c ? 'Modifier la commission' : 'Nouvelle commission', `
