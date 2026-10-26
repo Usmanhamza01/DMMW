@@ -244,6 +244,19 @@ dialog .pied{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;flex-w
 .plus-liste .lib{flex:1;min-width:0}
 .plus-liste .chev{color:var(--gris);font-size:1.4rem;line-height:1}
 .plus-liste .rouge{color:var(--rouge)} .plus-liste .rouge .pic{background:var(--rouge-pale);color:var(--rouge)}
+/* barre Retour / Actualiser, aperçu d'impression */
+.barre-haut{display:flex;justify-content:space-between;gap:8px;padding:14px 28px 0}
+.ico-btn{display:grid;place-items:center;width:40px;height:40px;border:0;background:none;color:inherit;border-radius:10px;cursor:pointer;flex:none}
+.ico-btn svg{width:22px;height:22px} .ico-btn:active{background:rgba(255,255,255,.15)}
+.tourne svg{animation:tourne .8s linear infinite} @keyframes tourne{to{transform:rotate(360deg)}}
+.apercu{position:fixed;inset:0;z-index:100;background:var(--fond);display:flex;flex-direction:column}
+.apercu-barre{display:flex;align-items:center;gap:10px;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));background:#0b3d73;color:#fff}
+.apercu-barre b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--titre)}
+.apercu-barre .btn:not(.prim){background:#fff;color:#0b3d73;border-color:#fff}
+.apercu-barre .btn.prim{background:#15803d;border-color:#15803d}
+.apercu iframe{flex:1;border:0;width:100%;background:#fff}
+body.sans-defil{overflow:hidden}
+.barre-haut + main{padding-top:12px}
 /* Connexion */
 .login{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr}
 .login .gauche{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:48px;gap:20px}
@@ -259,7 +272,10 @@ dialog .pied{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;flex-w
   .side{display:none}
   .mobile-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;position:sticky;top:0;z-index:5}
   .mobile-top img{width:34px;height:34px;border-radius:50%;background:#fff;padding:1px}
-  .mobile-top b{font-family:var(--titre);font-size:1.1rem;margin-right:auto}
+  .mobile-top{padding:6px 8px;gap:4px}
+  .mobile-top b{font-family:var(--titre);font-size:1.1rem;margin-right:auto;margin-left:4px}
+  .barre-haut{display:none}
+  .apercu-barre .btn{min-height:42px;padding:8px 12px} .apercu-barre b{font-size:.95rem}
   main{padding:16px 16px 96px}
   .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--trait);z-index:10;padding-bottom:env(safe-area-inset-bottom)}
   .tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;font-size:.7rem;color:var(--gris);text-decoration:none}
@@ -451,6 +467,9 @@ const I = {
   plus:'<path d="M12 5v14M5 12h14"/>',
   dl:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
   print:'<path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+  retour:'<polyline points="15 18 9 12 15 6"/>',
+  actualiser:'<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+  poubelle:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
   sortie:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
   lune:'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
   more:'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
@@ -638,21 +657,37 @@ document.addEventListener('click', e => {
 let LOGO_DATA = null;
 fetch('logo-256.png').then(r => r.ok ? r.blob() : null).then(b => { if (!b) return; const fr = new FileReader(); fr.onload = () => LOGO_DATA = fr.result; fr.readAsDataURL(b); }).catch(() => {});
 const LOGO_URL = () => LOGO_DATA || new URL('logo-256.png', location.href).href;
+// Aperçu d'impression DANS l'application : on garde toujours un bouton « Fermer » et le retour en arrière marche
+// (une nouvelle fenêtre restait bloquée sans retour possible dans l'application installée sur téléphone).
 function fenetreImpression(titre, corps) {
-  const w = window.open('', '_blank', 'width=900,height=900');
-  if (!w) { toast('Autorisez les fenêtres pop-up pour imprimer.', true); return; }
-  w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${h(titre)}</title>
+  fermerApercu(true);
+  const doc = (`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${h(titre)}</title>
   <style>body{font:12.5px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;color:#14202c;margin:0;padding:28px}
   .tete{display:flex;align-items:center;gap:14px;border-bottom:3px solid #0b3d73;padding-bottom:10px;margin-bottom:16px}.tete img{width:64px;height:64px}
   .tete b{font-size:17px;color:#0b3d73;display:block}.tete small{color:#5b6875}h1{font-size:19px;margin:0 0 4px}h2{font-size:15px;margin:18px 0 6px;color:#0b3d73}
   table{width:100%;border-collapse:collapse;margin:6px 0 12px}th,td{border-bottom:1px solid #d5dde5;padding:5px 6px;text-align:left}th{background:#e3edf6;font-size:11.5px}
   td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}tfoot td{font-weight:700;border-top:2px solid #0b3d73}.pied{margin-top:24px;color:#5b6875;font-size:11px}
+  @media screen and (max-width:640px){body{padding:14px;font-size:11.5px}table{font-size:10.5px}th,td{padding:4px 3px}.tete img{width:48px;height:48px}}
   @media print{body{padding:0}.noprint{display:none}thead{display:table-header-group}tr{break-inside:avoid}}</style></head><body>
   <div class="tete"><img src="${LOGO_URL()}" alt=""><div><b>${h(nomAsso())}</b><small>${h(param('devise'))}</small></div></div>
   ${corps}<p class="pied">Édité le ${new Date().toLocaleString('fr-FR')} par ${h(S.profil?.nom || S.user?.email || '')} — MMW Gestion</p>
-  <p class="noprint" style="text-align:center"><button onclick="print()" style="padding:8px 16px">Imprimer / enregistrer en PDF</button></p></body></html>`);
-  w.document.close();
+</body></html>`);
+  const ov = document.createElement('div'); ov.className = 'apercu'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', titre);
+  ov.innerHTML = `<div class="apercu-barre"><button type="button" class="btn" data-ap="fermer">${ico('retour')} Fermer</button><b>${h(titre)}</b>
+    <button type="button" class="btn prim" data-ap="imprimer">${ico('print')} Imprimer / PDF</button></div><iframe title="${h(titre)}"></iframe>`;
+  document.body.appendChild(ov); document.body.classList.add('sans-defil');
+  const fr = ov.querySelector('iframe'); fr.srcdoc = doc;
+  ov.querySelector('[data-ap=fermer]').onclick = () => fermerApercu();
+  ov.querySelector('[data-ap=imprimer]').onclick = () => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) { toast('Impression impossible sur cet appareil.', true); } };
+  history.pushState({ apercu: true }, '');   // la touche « retour » du téléphone ferme l'aperçu
 }
+function fermerApercu(sansHistorique = false) {
+  const ov = $('.apercu'); if (!ov) return;
+  ov.remove(); document.body.classList.remove('sans-defil');
+  if (!sansHistorique && history.state?.apercu) history.back();
+}
+window.addEventListener('popstate', () => { if ($('.apercu')) fermerApercu(true); });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && $('.apercu')) fermerApercu(); });
 function tableHTML(f) {
   const estNum = i => f.lignes.length && f.lignes.every(l => typeof l[i] === 'number' || l[i] === '' || l[i] == null);
   const nums = f.entetes.map((_, i) => estNum(i));
@@ -952,6 +987,21 @@ VUES.membres.apres = () => {
   $('#btNouveau')?.addEventListener('click', () => formMembre());
 };
 
+function supprimerMembre(m) {
+  const pay = (S.idx.pay.get(m.id) || []).filter(p => !p.annule); const tot = somme(pay, p => p.montant);
+  const fn = fonctions(m.id);
+  modale('Supprimer ' + nomComplet(m), `
+    <div class="alerte rouge" style="margin:0">La fiche <b>${h(m.matricule)}</b> sera supprimée définitivement${pay.length ? `, avec <b>${pay.length} encaissement${pay.length > 1 ? 's' : ''} (${fcfa(tot)})</b>` : ''}${fn.length ? ` et son poste au bureau (${h(fn.join(', '))})` : ''}. Une trace est gardée dans le journal.</div>
+    <p class="muted" style="margin:0;font-size:.9rem">S'il quitte simplement le dahira, préférez <b>Modifier › Statut : Inactif</b> : son historique est conservé.</p>
+    ${champ('Motif de la suppression', '<input name="motif" required minlength="3" placeholder="ex. doublon, inscription par erreur">')}
+    ${champ(`Pour confirmer, tapez le matricule ${m.matricule}`, `<input name="conf" required autocomplete="off" placeholder="${h(m.matricule)}">`)}`, {
+    valider: 'Supprimer définitivement', danger: true,
+    onSubmit: async v => {
+      if (v.conf.trim().toUpperCase() !== m.matricule.toUpperCase()) throw new Error('Le matricule saisi ne correspond pas.');
+      const r = await rpc('supprimer_membre', { p_membre: m.id, p_motif: v.motif });
+      location.hash = '#/membres'; await rafraichir(`${r.matricule} supprimé${r.encaissements_supprimes ? ` (${r.encaissements_supprimes} encaissement(s) retiré(s))` : ''}`);
+    } });
+}
 function formMembre(m = null) {
   const v = m || { mensualite: 2000, date_adhesion: new Date().toISOString(), statut: 'actif' };
   const pv = (m && S.prive.get(m.id)) || {};
@@ -1004,7 +1054,7 @@ VUES.membre = id => {
     { nom: 'Paiements', entetes: ['Date', 'Reçu', 'Nature', 'Période', 'Mode', 'Référence', 'Montant', 'Statut'], lignes: pay.map(p => [dateFr(p.date_paiement), p.recu_numero, NATURES[p.nature], p.periode_libelle || '', p.mode, p.reference || '', p.montant, p.annule ? 'Annulé' : 'Valide']) }] });
   return `<div class="fiche-tete treillis"><div class="ini" aria-hidden="true">${h(initiales(m))}</div><div style="flex:1;min-width:200px"><h1>${h(nomComplet(m))}</h1>
     <div style="opacity:.85">${h(m.matricule)}${m.categorie ? ' · ' + h(m.categorie) : ''} · ${h(S.idx.com.get(m.commission_id)?.nom || 'Sans commission')}${fonctions(m.id).length ? ' · ' + h(fonctions(m.id).join(', ')) : ''}${m.statut === 'inactif' ? ' · inactif' : ''}</div></div>
-    <div class="outils">${fin ? `<button class="btn" data-export="fiche" data-fmt="xlsx" style="color:var(--encre)">${ico('dl')} Excel</button><button class="btn" id="btSitu" style="color:var(--encre)">${ico('print')} Situation</button>` : ''}${peut.argent() ? '<button class="btn vert" id="btEnc">Encaisser</button>' : ''}${peut.membres() ? '<button class="btn" id="btModif" style="color:var(--encre)">Modifier</button>' : ''}</div></div>
+    <div class="outils">${fin ? `<button class="btn" data-export="fiche" data-fmt="xlsx" style="color:var(--encre)">${ico('dl')} Excel</button><button class="btn" id="btSitu" style="color:var(--encre)">${ico('print')} Situation</button>` : ''}${peut.argent() ? '<button class="btn vert" id="btEnc">Encaisser</button>' : ''}${peut.membres() ? '<button class="btn" id="btModif" style="color:var(--encre)">Modifier</button>' : ''}${peut.admin() ? `<button class="btn" id="btSuppr" style="color:var(--rouge)">${ico('poubelle')} Supprimer</button>` : ''}</div></div>
   <div class="grille g2">
     <section class="panneau"><h2>Informations</h2><dl class="dl">
       <dt>Catégorie</dt><dd>${h(m.categorie || '—')}</dd><dt>Genre</dt><dd>${h(m.genre || '—')}</dd><dt>Téléphone</dt><dd>${m.telephone ? `<a href="tel:${h(m.telephone.replace(/[^\d+]/g, ''))}">${h(m.telephone)}</a>${m.telephone_norm ? ` · <a href="https://wa.me/221${h(m.telephone_norm)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}` : '—'}</dd>
@@ -1040,6 +1090,7 @@ VUES.membre = id => {
 VUES.membre.apres = id => {
   const m = S.idx.membre.get(id); if (!m) return;
   $('#btModif')?.addEventListener('click', () => formMembre(m));
+  $('#btSuppr')?.addEventListener('click', () => supprimerMembre(m));
   $('#btEnc')?.addEventListener('click', () => encaisser(m.id));
   $('#btEng')?.addEventListener('click', () => formEngagement(m));
   $('#btSitu')?.addEventListener('click', () => imprimerSituation(m));
@@ -1807,7 +1858,7 @@ VUES.parametres.apres = () => {
   $('#btSauvXlsx')?.addEventListener('click', () => sauvegarde('xlsx'));
   $('#btJournal')?.addEventListener('click', async () => {
     const { data, error } = await S.sb.from('journal').select('table_nom,action,user_id,le,ligne_id').order('le', { ascending: false }).limit(200); if (error) return erreur(error);
-    $('#journal').innerHTML = `<ul class="liste-ops" style="max-height:320px;overflow:auto">${data.map(j => `<li><span>${h(j.table_nom)} · ${h({ INSERT: 'ajout', UPDATE: 'modification', DELETE: 'suppression' }[j.action])}<br><small class="muted">${h(quiNom(j.user_id))}</small></span><small class="muted">${new Date(j.le).toLocaleString('fr-FR')}</small></li>`).join('')}</ul>`;
+    $('#journal').innerHTML = `<ul class="liste-ops" style="max-height:320px;overflow:auto">${data.map(j => `<li><span>${h(j.table_nom)} · ${h(({ INSERT: 'ajout', UPDATE: 'modification', DELETE: 'suppression', SUPPRESSION: 'suppression d\'un adhérent' }[j.action] || j.action))}<br><small class="muted">${h(quiNom(j.user_id))}</small></span><small class="muted">${new Date(j.le).toLocaleString('fr-FR')}</small></li>`).join('')}</ul>`;
   });
   $('#btMdp').onclick = () => modale('Changer mon mot de passe', champ('Nouveau mot de passe (8 caractères minimum)', '<input type="password" name="mdp" minlength="8" required autocomplete="new-password">'), {
     onSubmit: async v => { if (v.mdp.length < 8) throw new Error('8 caractères minimum.'); const { error } = await S.sb.auth.updateUser({ password: v.mdp }); if (error) throw error; toast('Mot de passe modifié'); } });
@@ -1904,10 +1955,18 @@ function coquille() {
       <input type="search" class="cherche-nav" id="chNav" placeholder="État d'un membre…" aria-label="Rechercher l'état d'un membre">
       <nav class="nav" aria-label="Menu principal">${items.map(([k, l, i]) => k === '-' ? '<div class="sep"></div>' : `<a href="#/${k}" data-nav="${k}">${ico(i)}${l}${k === 'formulaire' && nb ? `<span class="badge">${nb}</span>` : ''}</a>`).join('')}</nav>
       <div class="bas">${h(S.profil.nom || S.user.email)}<br><span style="opacity:.75">${ROLES[role()]}</span><br><button id="btOut">Se déconnecter</button></div></aside>
-    <div style="min-width:0"><div class="mobile-top treillis"><img src="logo-256.png" alt=""><b>${h(param('sigle', 'MMW'))}</b><a href="#/etat" aria-label="Rechercher un membre" style="display:flex">${ico('search').replace('<svg', '<svg width="22" height="22"')}</a></div>
+    <div style="min-width:0"><div class="mobile-top treillis"><button type="button" class="ico-btn" data-retour aria-label="Retour">${ico('retour')}</button><img src="logo-256.png" alt=""><b>${h(param('sigle', 'MMW'))}</b>
+        <button type="button" class="ico-btn" data-actualiser aria-label="Actualiser">${ico('actualiser')}</button><a href="#/etat" class="ico-btn" aria-label="Rechercher un membre">${ico('search')}</a></div>
+      <div class="barre-haut"><button type="button" class="btn petit" data-retour>${ico('retour')} Retour</button><button type="button" class="btn petit" data-actualiser>${ico('actualiser')} Actualiser</button></div>
       <main id="vue" tabindex="-1"></main></div>
     <nav class="tabbar" aria-label="Navigation">${tab.map(([k, l, i]) => `<a href="#/${k}" data-nav="${k}">${ico(i)}${l}</a>`).join('')}</nav></div>`;
   $('#btOut').onclick = sortir;
+  $$('[data-retour]').forEach(b => b.onclick = retour);
+  $$('[data-actualiser]').forEach(b => b.onclick = async () => {
+    $$('[data-actualiser]').forEach(x => { x.disabled = true; x.classList.add('tourne'); });
+    try { await rafraichir('Données à jour'); } catch (e) { erreur(e); }
+    $$('[data-actualiser]').forEach(x => { x.disabled = false; x.classList.remove('tourne'); });
+  });
   $('#chNav').addEventListener('keydown', ev => { if (ev.key === 'Enter') { location.hash = '#/etat/' + encodeURIComponent(ev.target.value); ev.target.value = ''; } });
   $('#chNav').addEventListener('input', debounce(ev => { if (ev.target.value.trim().length >= 2) { location.hash = '#/etat/' + encodeURIComponent(ev.target.value); setTimeout(() => { ev.target.value = ''; }, 50); } }, 500));
 }
@@ -1941,6 +2000,12 @@ VUES.plus.apres = () => {
 };
 
 let vueCourante = '';
+let pasDansAppli = 0;   // nombre de pages parcourues dans l'application (pour savoir si « Retour » peut revenir en arrière)
+function retour() {
+  if ($('.apercu')) return fermerApercu();
+  if ($('#modale')?.open) return $('#modale').close();
+  if (pasDansAppli > 1) { pasDansAppli -= 2; history.back(); } else location.hash = '#/tableau';
+}
 // Téléphone : tableaux en fiches lisibles, filtres repliables (le rendu ordinateur ne change pas)
 const filtresOuverts = new Set();
 function ameliorerMobile(el, nom) {
@@ -1982,7 +2047,9 @@ function router() {
   $$('[data-choix]', el).forEach(sel => sel.addEventListener('change', ev => {
     const id = Number(ev.target.value); if (sel.dataset.choix === 'cotisation') { S.campId = id; localStorage.setItem('mmw_campagne', id); } else { S.exoMId = id; localStorage.setItem('mmw_annee', id); }
     S.idx.situ.clear(); router(); }));
-  if (vueCourante !== location.hash) { window.scrollTo(0, 0); vueCourante = location.hash; } else window.scrollTo(0, scroll);
+  if (vueCourante !== location.hash) { window.scrollTo(0, 0); vueCourante = location.hash; pasDansAppli++; } else window.scrollTo(0, scroll);
+  const accueil = nom === 'tableau'; $$('[data-retour]').forEach(b => b.style.visibility = accueil && pasDansAppli <= 1 ? 'hidden' : '');
+  fermerApercu(true);
 }
 window.addEventListener('hashchange', router);
 
