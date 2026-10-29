@@ -438,7 +438,7 @@ const nomComplet = m => m ? `${m.prenom} ${(m.nom || '').toUpperCase()}` : '';
 const initiales = m => ((m.prenom || '?')[0] + (m.nom || '?')[0]).toUpperCase();
 const debounce = (f, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => f(...a), ms); }; };
 const cherche = (m, q) => !q || norm(`${m.nom}${m.prenom}|${m.prenom}${m.nom}|${m.matricule}|${m.telephone}`).includes(norm(q));
-const ROLES = { admin: 'Administrateur', tresorier: 'Trésorier', secretaire: 'Secrétaire', bureau: 'Membre du bureau', responsable: 'Responsable de commission' };
+const ROLES = { admin: 'Administrateur', tresorier: 'Trésorier', secretaire: 'Secrétaire', bureau: 'Membre du bureau', responsable: 'Responsable de commission', lecteur: 'Lecture seule' };
 const NATURES = { carte: 'Carte de membre', sass: 'Cotisation annuelle', mensualite: 'Mensualité', autre: 'Autre recette' };
 const CATEGORIES = ['Kourel 1', 'Kourel 2', 'Kourel 3', 'Soxna yi', 'Autres'];
 const MODES = ['Espèces', 'Wave', 'Orange Money', 'Free Money', 'Virement', 'Chèque', 'Autre'];
@@ -514,6 +514,7 @@ const S = {
   exoMId: null, campId: null, idx: {},
 };
 const role = () => S.profil?.role;
+const lit = () => role() === 'lecteur' ? 'bureau' : role();   // lecture seule : voit les listes comme le bureau (sans l'argent), ne modifie rien
 const peut = {
   membres: () => ['admin', 'secretaire'].includes(role()),
   argent: () => ['admin', 'tresorier'].includes(role()),
@@ -522,10 +523,11 @@ const peut = {
   admin: () => role() === 'admin',
   form: () => ['admin', 'secretaire'].includes(role()),
   prive: () => ['admin', 'secretaire'].includes(role()),
-  depenses: () => ['admin', 'tresorier', 'bureau'].includes(role()),
+  depenses: () => ['admin', 'tresorier', 'bureau'].includes(role()),   // lecture seule : pas d'argent
+  messages: () => role() === 'lecteur' ? !!S.profil?.acces_messages : (peut.relancer() || (peut.finances() && role() !== 'responsable')),
   // présences : admin, secrétariat, bureau ; responsable de l'instance du même nom (ex. responsable « Kourel 1 »)
   presences: g => ['admin', 'secretaire', 'bureau'].includes(role()) || (role() === 'responsable' && mesInstances().includes(g)),
-  voirPresences: () => ['admin', 'tresorier', 'secretaire', 'bureau'].includes(role()) || (role() === 'responsable' && mesInstances().some(n => CATEGORIES.includes(n))),
+  voirPresences: () => ['admin', 'tresorier', 'secretaire', 'bureau'].includes(lit()) || (role() === 'responsable' && mesInstances().some(n => CATEGORIES.includes(n))),
   finances: () => ['admin', 'tresorier', 'bureau'].includes(role()) || (role() === 'responsable' && param('responsables_voient_paiements') === 'true'),
 };
 const mesInstances = () => { const mid = S.profil?.membre_id; return mid ? S.responsables.filter(r => r.membre_id === mid && !r.date_fin).map(r => S.commissions.find(c => c.id === r.commission_id)?.nom).filter(Boolean) : []; };
@@ -1618,7 +1620,7 @@ VUES.presences = id => {
       c.present, c.justifie, c.absent, pct(c.present, seances.length)]) });
   const dernier = etats[0];
   return page('Liste de présences rencontres', `${h(g)} · rencontres du dimanche · ${mem.length} membre${mem.length > 1 ? 's' : ''}`,
-    `<select id="pGroupe" aria-label="Groupe">${opts(CATEGORIES.filter(x => peut.presences(x) || ['admin', 'tresorier', 'secretaire', 'bureau'].includes(role())), g)}</select>${boutonsExport('bilanPres', true)}${ecrit ? `<button class="btn prim" id="btSeance">${ico('plus')} Nouvelle rencontre</button>` : ''}`, `
+    `<select id="pGroupe" aria-label="Groupe">${opts(CATEGORIES.filter(x => peut.presences(x) || ['admin', 'tresorier', 'secretaire', 'bureau'].includes(lit())), g)}</select>${boutonsExport('bilanPres', true)}${ecrit ? `<button class="btn prim" id="btSeance">${ico('plus')} Nouvelle rencontre</button>` : ''}`, `
     <dl class="bande treillis" style="--n:3"><div><dt>Rencontres tenues</dt><dd>${seances.length}</dd></div>
       <div><dt>Taux moyen de présence</dt><dd>${taux} %</dd></div>
       <div><dt>Dernière rencontre</dt><dd>${dernier ? `${dernier[1].presents}<span style="font-size:1rem;opacity:.75"> / ${dernier[1].total}</span>` : '—'}</dd><small>${dernier ? dateFr(dernier[0].date_seance) : 'aucune'}</small></div></dl>
@@ -1762,7 +1764,7 @@ VUES.rapports = () => {
       ['annuel', 'Rapport annuel de gestion financière', `Synthèse imprimable : année ${String(e.libelle).replace('Mensualités ', '')} et campagne ${c.libelle}.`, false],
     ] : []),
   ];
-  return page('Rapports et états', 'Chaque état s\'exporte en Excel, en CSV ou en PDF (impression du navigateur). La situation individuelle s\'imprime depuis la fiche du membre.', selAnnee() + selCamp(), `
+  return page('Rapports et états', 'Chaque état s\'exporte en Excel, en CSV ou en PDF (impression du navigateur). La situation individuelle s\'imprime depuis la fiche du membre.', fin ? selAnnee() + selCamp() : '', `
     <div class="rapports">${R.map(([k, t, d, ex]) => `<article><h3>${h(t)}</h3><p>${h(d)}</p><div class="outils">${ex ? boutonsExport('r_' + k, true) : `<button class="btn petit prim" id="btAnnuel">${ico('print')} Ouvrir le rapport</button>`}</div></article>`).join('')}</div>`);
 };
 VUES.rapports.apres = () => {
@@ -2012,7 +2014,10 @@ VUES.formulaire.apres = () => {
 };
 
 /* ---------- Paramètres */
+const sectionCompte = () => `<section class="panneau mt"><h2>Mon compte</h2><p style="margin-top:0">${h(S.profil.identifiant || S.user.email)} · ${ROLES[role()]}${S.env === 'test' ? ' · <b>environnement de test</b>' : ''}</p>
+    <div class="outils"><button class="btn" id="btMdp">Changer mon mot de passe</button><button class="btn" id="btTheme">Thème : ${{ '': 'automatique', light: 'clair', dark: 'sombre' }[localStorage.getItem('mmw_theme') || '']}</button><button class="btn danger" id="btSortir">Se déconnecter</button></div></section>`;
 VUES.parametres = () => {
+  if (role() === 'lecteur') return page('Paramètres', 'Compte en lecture seule : consultation des listes, sans les montants.', '', sectionCompte());
   const adm = peut.admin(); const p = S.params; const dis = adm ? '' : 'disabled';
   return page('Paramètres', adm ? '' : 'Consultation : seuls les administrateurs modifient ces réglages.', '', `
   <div class="grille g2">
@@ -2055,10 +2060,11 @@ VUES.parametres = () => {
   ${adm ? `<div class="grille g2 mt">
     <section class="panneau"><h2>Utilisateurs et rôles</h2>
       <p class="muted" style="font-size:.88rem;margin-top:0">Ajouter un utilisateur : Supabase › Authentication › Users › Add user. Il arrive ici comme « Membre du bureau » ; donnez-lui un nom de connexion pour qu'il se connecte sans e-mail. Pour un responsable de commission, liez-le à sa fiche adhérent.</p>
-      <div class="tab-wrap"><table><thead><tr><th>Utilisateur</th><th>Nom de connexion</th><th>Rôle</th><th>Fiche liée</th><th>Accès</th></tr></thead><tbody>
+      <div class="tab-wrap"><table><thead><tr><th>Utilisateur</th><th>Nom de connexion</th><th>Rôle</th><th>Fiche liée</th><th>Accès</th><th>Messages</th></tr></thead><tbody>
       ${S.profils.map(u => `<tr><td>${h(u.nom || '')}<br><small class="muted">${h(u.email)}</small></td><td><input data-ident="${u.user_id}" value="${h(u.identifiant || '')}" placeholder="ex. TRESORIER" style="max-width:150px" autocapitalize="characters"></td><td><select data-role="${u.user_id}" ${u.user_id === S.user.id ? 'disabled' : ''}>${opts(Object.entries(ROLES), u.role)}</select></td>
         <td><select data-lien="${u.user_id}">${optsMembres(u.membre_id, '— Aucune —')}</select></td>
-        <td><select data-actif="${u.user_id}" ${u.user_id === S.user.id ? 'disabled' : ''}>${opts([['true', 'Autorisé'], ['false', 'Bloqué']], String(u.actif))}</select></td></tr>`).join('')}
+        <td><select data-actif="${u.user_id}" ${u.user_id === S.user.id ? 'disabled' : ''}>${opts([['true', 'Autorisé'], ['false', 'Bloqué']], String(u.actif))}</select></td>
+        <td>${u.role === 'lecteur' ? `<select data-msg="${u.user_id}">${opts([['false', 'Non autorisé'], ['true', 'Autorisé']], String(!!u.acces_messages))}</select>` : '<small class="muted">selon le rôle</small>'}</td></tr>`).join('')}
       </tbody></table></div></section>
     <section class="panneau"><h2>Sauvegarde, formulaire, journal</h2>
       <p style="margin-top:0"><b>Sauvegarde complète</b> : toutes les tables dans un fichier, à ranger hors ligne (Google Drive, clé USB). La restauration est décrite dans le guide.</p>
@@ -2076,13 +2082,14 @@ VUES.parametres = () => {
 VUES.parametres.apres = () => {
   const enreg = form => async ev => { ev.preventDefault(); const v = Object.fromEntries(new FormData(form));
     try { const { error } = await S.sb.from('parametres').upsert(Object.entries(v).map(([cle, valeur]) => ({ cle, valeur: String(valeur) }))); if (error) throw error; await rafraichir('Paramètres enregistrés'); } catch (e) { erreur(e); } };
-  $('#fParams').onsubmit = enreg($('#fParams')); $('#fMsg').onsubmit = enreg($('#fMsg'));
+  if ($('#fParams')) { $('#fParams').onsubmit = enreg($('#fParams')); $('#fMsg').onsubmit = enreg($('#fMsg')); }
   $('#btAnnee')?.addEventListener('click', () => formExercice('mensualites'));
   $('#btRaz2')?.addEventListener('click', remiseAZero);
   $$('[data-editexo]').forEach(b => { const e = S.exercices.find(x => x.id === Number(b.dataset.editexo)); b.onclick = () => formExercice(e.type, e); });
   $$('[data-actexo]').forEach(b => b.onclick = async () => { try { await S.sb.from('exercices').update({ actif: false }).eq('actif', true).eq('type', 'mensualites'); await maj('exercices', Number(b.dataset.actexo), { actif: true }); localStorage.removeItem('mmw_annee'); await rafraichir('Année courante modifiée'); } catch (e) { erreur(e); } });
   $$('[data-genexo]').forEach(b => b.onclick = async () => { try { const n = await rpc('generer_echeances', { p_exercice: Number(b.dataset.genexo), p_membre: null }); await rafraichir(n ? `${n} échéance(s) ajoutée(s)` : 'Tout est déjà à jour : aucune échéance ajoutée'); } catch (e) { erreur(e); } });
   $$('[data-role]').forEach(s => s.onchange = async () => { try { await maj('profils', s.dataset.role, { role: s.value }, 'user_id'); await rafraichir('Rôle modifié'); } catch (e) { erreur(e); } });
+  $$('[data-msg]').forEach(s => s.onchange = async () => { try { await maj('profils', s.dataset.msg, { acces_messages: s.value === 'true' }, 'user_id'); await rafraichir(s.value === 'true' ? 'Accès aux Messages autorisé' : 'Accès aux Messages retiré'); } catch (e) { erreur(e); } });
   $$('[data-ident]').forEach(s => s.onchange = async () => { const v = s.value.trim(); if (v && !/^[A-Za-z0-9._-]{3,30}$/.test(v)) return toast('Nom de connexion : 3 à 30 lettres ou chiffres, sans espace.', true);
     try { await maj('profils', s.dataset.ident, { identifiant: v || null }, 'user_id'); await rafraichir('Nom de connexion enregistré'); } catch (e) { erreur(/duplicate|unique/i.test(e.message) ? new Error('Ce nom de connexion est déjà pris.') : e); } });
   $$('[data-lien]').forEach(s => s.onchange = async () => { try { await maj('profils', s.dataset.lien, { membre_id: s.value || null }, 'user_id'); await rafraichir('Fiche liée'); } catch (e) { erreur(e); } });
@@ -2182,7 +2189,7 @@ function nav() {
   return [
     ['tableau', 'Tableau de bord', 'board', true], ['etat', 'État d\'un membre', 'search', true], ['membres', 'Adhérents', 'users', true], ['commissions', 'Commissions et bureau', 'layers', true], ['presences', 'Liste de présences rencontres', 'coche', peut.voirPresences()], ['-'],
     ['cartes', 'Cartes de membre', 'card', fin], ['cotisations', 'Cotisations annuelles', 'coins', fin], ['mensualites', 'Mensualités', 'cal', fin],
-    ['encaissements', 'Encaissements', 'list', fin], ['messages', 'Messages', 'wa', peut.relancer() || (fin && role() !== 'responsable')], ['depenses', 'Dépenses', 'out', peut.depenses()], ['-'],
+    ['encaissements', 'Encaissements', 'list', fin], ['messages', 'Messages', 'wa', peut.messages()], ['depenses', 'Dépenses', 'out', peut.depenses()], ['-'],
     ['rapports', 'Rapports', 'doc', true], ['import', 'Import Excel', 'up', peut.admin()], ['formulaire', 'Formulaire Google', 'form', peut.form()], ['parametres', 'Paramètres', 'gear', true],
   ].filter(x => x[0] === '-' || x[3]);
 }

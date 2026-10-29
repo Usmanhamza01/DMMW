@@ -1,5 +1,5 @@
 // MMW — cache de l'application (les données restent toujours en ligne sur Supabase)
-const CACHE = 'mmw-v13';
+const CACHE = 'mmw-v15';
 const FICHIERS = ['./', './index.html', './manifest.json', './logo-256.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FICHIERS))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
